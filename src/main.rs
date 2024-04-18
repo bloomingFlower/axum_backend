@@ -3,6 +3,7 @@ use axum::routing::get;
 use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
+use hyper::Server;
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +17,7 @@ async fn main() {
     // 서비스 빌더를 사용하여 미들웨어를 추가하고 서버를 실행합니다.
     let svc = ServiceBuilder::new().layer(TraceLayer::new_for_http()).service(app);
 
-    axum::Server::bind(&addr)
+    Server::bind(&addr)
         .serve(svc)
         .await
         .unwrap();
