@@ -1,25 +1,31 @@
-use crate::{Error, Result};
+use crate::{web, Error, Result};
 use axum::routing::post;
-use axum::Router;
 use axum::Json;
-use serde_json::{json, Value};
+use axum::Router;
 use serde::Deserialize;
-
+use serde_json::{json, Value};
+use tower_cookies::{Cookie, Cookies};
 
 pub fn routes() -> Router {
-    Router::new()
-        .route("/api/login", post(api_login))
+    Router::new().route("/api/login", post(api_login))
 }
 
-async fn api_login(payload: Json<LoginPayload>) -> Result<Json<Value>> {
-    println!("--> {:<12} - api_login - {payload:?}", "HANDLER", payload = payload);
+async fn api_login(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
+    println!(
+        "--> {:<12} - api_login - {payload:?}",
+        "HANDLER",
+        payload = payload
+    );
 
+    // TODO: Implement a real database check
     if payload.username != "demo1" || payload.password != "demo" {
-        return Err(Error::LoginFail)
+        return Err(Error::LoginFail);
     }
 
-    // Set Cookie
+    // FIXME: Implement a real token generation
+    cookies.add(Cookie::new(web::AUTH_TOKEN, "user-1.exp.sign"));
 
+    // Create the response body
     let body = Json(json!({
         "result": {
             "status": "ok"

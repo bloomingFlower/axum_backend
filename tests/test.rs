@@ -11,10 +11,12 @@ async fn test() -> Result<()> {
         "/api/login",
         json!({
             "username": "demo1",
-            "password": "demo1"
-        })
+            "password": "demo"
+        }),
     );
     req_login.await?.print().await?;
+
+    ht.do_get("/hello2/JYY2").await?.print().await?;
 
     Ok(())
 }
