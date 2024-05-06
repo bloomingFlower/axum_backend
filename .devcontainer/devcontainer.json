@@ -20,13 +20,15 @@
         "files.watcherExclude": {
           "**/target/**": true
         },
-        "rust-analyzer.checkOnSave.command": "clippy"
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "rust-analyzer.cargo.autoreload": true
       },
       "extensions": [
         "vadimcn.vscode-lldb",
         "mutantdino.resourcemonitor",
         "rust-lang.rust-analyzer",
         "tamasfe.even-better-toml",
+        "Github.copilot",
         "serayuzgur.crates",
         "bungcip.better-toml"
       ]
