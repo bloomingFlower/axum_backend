@@ -69,5 +69,4 @@ async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse {
 
     Html(format!("Hello, <strong>{name}</strong>"))
 }
-
 //endregion: Handler Hello
