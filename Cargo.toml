@@ -9,7 +9,7 @@ edition = "2021"
 # Tokio is an asynchronous runtime for Rust
 tokio = { version = "1.37.0", features = ["full"] }
 # Axum is a web framework based on hyper, the Rust HTTP library
-axum = "0.7.5"
+axum = { version = "0.7.5", features = ["macros"] }
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
 # Serde is a serialization/deserialization library for Rust
