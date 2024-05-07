@@ -1,3 +1,4 @@
+[![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
 # Rust Web Server
 
 ## How to Run
