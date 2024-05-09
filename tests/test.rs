@@ -26,7 +26,7 @@ async fn test() -> Result<()> {
     );
     req_create_ticket.await?.print().await?;
 
-    // ht.do_delete("/api/tickets/1").await?.print().await?;
+    ht.do_delete("/api/tickets/1").await?.print().await?;
 
     ht.do_get("/api/tickets").await?.print().await?;
 

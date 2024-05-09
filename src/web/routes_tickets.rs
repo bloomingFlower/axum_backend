@@ -1,13 +1,13 @@
 use crate::model::{ModelController, Ticket, TicketForCreate};
 use crate::Result;
-use axum::extract::{FromRef, Path, State};
+use axum::extract::{Path, State};
 use axum::routing::{delete, post};
 use axum::{Json, Router};
 
 pub fn routes(mc: ModelController) -> Router {
     Router::new()
-        .route("/api/tickets", post(create_ticket).get(list_tickets))
-        .route("/api/tickets/:id", delete(delete_ticket))
+        .route("/tickets", post(create_ticket).get(list_tickets))
+        .route("/tickets/:id", delete(delete_ticket))
         .with_state(mc)
 }
 
