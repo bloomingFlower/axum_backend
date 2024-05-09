@@ -18,5 +18,17 @@ async fn test() -> Result<()> {
 
     ht.do_get("/hello2/JYY2").await?.print().await?;
 
+    let req_create_ticket = ht.do_post(
+        "/api/tickets",
+        json!({
+            "title": "Ticket 1"
+        }),
+    );
+    req_create_ticket.await?.print().await?;
+
+    // ht.do_delete("/api/tickets/1").await?.print().await?;
+
+    ht.do_get("/api/tickets").await?.print().await?;
+
     Ok(())
 }

@@ -4,17 +4,11 @@ use axum::extract::{FromRef, Path, State};
 use axum::routing::{delete, post};
 use axum::{Json, Router};
 
-#[derive(Clone, FromRef)]
-struct AppState {
-    mc: ModelController,
-}
-
 pub fn routes(mc: ModelController) -> Router {
-    let app_state = AppState { mc };
     Router::new()
         .route("/api/tickets", post(create_ticket).get(list_tickets))
         .route("/api/tickets/:id", delete(delete_ticket))
-        .with_state(app_state)
+        .with_state(mc)
 }
 
 // region: Restful Handler
