@@ -29,6 +29,5 @@ async fn test() -> Result<()> {
     ht.do_delete("/api/tickets/1").await?.print().await?;
 
     ht.do_get("/api/tickets").await?.print().await?;
-
     Ok(())
 }

@@ -9,6 +9,7 @@ pub enum Error {
 
     // Auth Error
     AuthFailNoAuthTokenCookie,
+    AuthFailTokenWrongFormat,
 
     // Model Error
     TicketDeleteFailIdNotFound { id: u64 },
