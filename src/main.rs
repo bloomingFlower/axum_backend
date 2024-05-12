@@ -10,6 +10,7 @@ use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
+mod ctx;
 mod error;
 mod model;
 mod web;
