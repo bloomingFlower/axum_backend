@@ -35,6 +35,10 @@ async fn main() -> Result<()> {
         .nest("/api", routes_apis)
         // Add a middleware to map the all responses
         .layer(middleware::map_response(main_response_mapper))
+        .layer(middleware::from_fn_with_state(
+            mc.clone(),
+            web::mw_auth::mw_ctx_resolver,
+        ))
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
         // Add a fallback service to serve static files

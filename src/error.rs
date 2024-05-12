@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// Error type for this application
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     // Login Error
     LoginFail,
@@ -13,6 +13,7 @@ pub enum Error {
     // Auth Error
     AuthFailNoAuthTokenCookie,
     AuthFailTokenWrongFormat,
+    AuthFailCtxNotInRequestExtensions,
 
     // Model Error
     TicketDeleteFailIdNotFound { id: u64 },
