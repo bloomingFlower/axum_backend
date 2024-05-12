@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
 //region Ticket Type
+/// Ticket Struct
 #[derive(Clone, Debug, Serialize)]
 pub struct Ticket {
     pub id: u64,
@@ -11,6 +12,7 @@ pub struct Ticket {
     pub title: String,
 }
 
+/// TicketForCreate Struct
 #[derive(Deserialize)]
 pub struct TicketForCreate {
     pub title: String,
@@ -19,12 +21,16 @@ pub struct TicketForCreate {
 
 //region: Model Controller
 
+/// Model Controller Struct
 #[derive(Debug, Clone)]
 pub struct ModelController {
+    // Tickets Store Mutex Arc Vec Option Ticket
     tickets_store: Arc<Mutex<Vec<Option<Ticket>>>>,
 }
 
+/// Model Controller Implementation
 impl ModelController {
+    /// New Model Controller
     pub async fn new() -> Result<Self> {
         Ok(Self {
             tickets_store: Arc::default(),
