@@ -5,6 +5,7 @@ use axum::Router;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
+use tracing::debug;
 
 /// Create the Login Routes and return the Router
 pub fn routes() -> Router {
@@ -14,7 +15,7 @@ pub fn routes() -> Router {
 
 /// Login Handler that returns a JSON response with a status
 async fn api_login(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
-    println!(
+    debug!(
         "--> {:<12} - api_login - {payload:?}",
         "HANDLER",
         payload = payload

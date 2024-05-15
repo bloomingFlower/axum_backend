@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
+use tracing::debug;
 
 /// Result type for this application with the Error type
 pub type Result<T> = core::result::Result<T, Error>;
@@ -21,6 +22,9 @@ pub enum Error {
 
     // Model Error
     TicketDeleteFailIdNotFound { id: u64 },
+
+    // Config Error
+    ConfigMissingEnvVar { name: &'static str },
 }
 
 // region: IntoResponse
@@ -28,7 +32,7 @@ pub enum Error {
 impl IntoResponse for Error {
     /// Convert the Error type into a Response
     fn into_response(self) -> Response {
-        println!("--> {:<12} - Error - {error:?}", "HANDLER", error = self);
+        debug!(" {:<12} - Error - {error:?}", "HANDLER", error = self);
         // Return a 500 Internal Server Error with the error message
 
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();

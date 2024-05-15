@@ -14,7 +14,7 @@ async fn test() -> Result<()> {
     let ht = httpc_test::new_client("http://localhost:3000")?;
     ht.do_get("/hello?name=JYY").await?.print().await?;
     ht.do_get("/hello2/JYY2").await?.print().await?;
-
+    ht.do_get("/index.html").await?.print().await?;
     let req_login = ht.do_post(
         "/api/login",
         json!({

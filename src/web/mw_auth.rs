@@ -12,10 +12,11 @@ use axum::middleware::Next;
 use axum::response::Response;
 use lazy_regex::regex_captures;
 use tower_cookies::{Cookie, Cookies};
+use tracing::debug;
 
 /// Middleware to require authentication for the request to continue to the next handler or middleware in the chain
 pub async fn mw_require_auth(ctx: Result<Ctx>, req: Request<Body>, next: Next) -> Result<Response> {
-    println!("--> {:<12} - mw_require_auth - {ctx:?}", "MIDDLEWARE");
+    debug!(" {:<12} - mw_require_auth - {ctx:?}", "MIDDLEWARE");
 
     // Check if the Ctx was extracted correctly
     ctx?;
@@ -33,9 +34,9 @@ pub async fn mw_ctx_resolver(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response> {
-    println!("--> {:<12} - mw_ctx_resolver", "MIDDLEWARE");
+    debug!(" {:<12} - mw_ctx_resolver", "MIDDLEWARE");
     let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
-    
+
     let result_ctx = match auth_token
         .ok_or(Error::AuthFailNoAuthTokenCookie)
         .and_then(parse_token)
@@ -68,7 +69,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Ctx {
 
     /// Extract the Ctx from the request parts(Component parts of an HTTP Request)
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-        println!("--> {:<12} - Ctx", "EXTRACTOR");
+        debug!(" {:<12} - Ctx", "EXTRACTOR");
 
         // parts - HTTP Request except the body, headers
         // extensions - A map of extensions that can be used to share data between different components

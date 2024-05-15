@@ -4,7 +4,7 @@
 ## How to Run
 ### Run Web Server
 ```sh
-cargo watch -q -c -w src/ -x 'run'
+cargo watch -q -c -w src/ -w .cargo/ -x 'run'
 ```
 ### Run Tests
 ```sh

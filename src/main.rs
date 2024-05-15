@@ -1,8 +1,20 @@
-pub use self::error::{Error, Result};
+mod config;
+/// Import the necessary modules
+mod ctx;
+mod error;
+mod log;
+mod model;
+mod web;
 
+/// Export the Error and Result types
+pub use self::error::{Error, Result};
+pub use config::load_config;
+
+/// Import the necessary modules
 use crate::ctx::Ctx;
 use crate::log::log_request;
 use crate::model::ModelController;
+use crate::web::routes_static;
 use axum::extract::{Path, Query};
 use axum::http::{Method, Uri};
 use axum::response::{Html, IntoResponse, Response};
@@ -13,18 +25,20 @@ use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
+use tracing::{debug, info};
+use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-
-mod ctx;
-mod error;
-mod log;
-mod model;
-mod web;
 
 /// Tokio Runtime Entry Point
 #[tokio::main]
 /// Async Main Function that returns a Result
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .without_time() // For local development
+        .with_target(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     // Initialize the Model Controller and wait for it to be ready
     let mc = ModelController::new().await?;
     // Initialize the Router with the Model Controller
@@ -49,7 +63,7 @@ async fn main() -> Result<()> {
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
         // Add a fallback service to serve static files
-        .fallback_service(routes_static());
+        .fallback_service(routes_static::serve_dir());
 
     // region: Start the server
     // Create a TCP Listener on port 3000
@@ -58,7 +72,7 @@ async fn main() -> Result<()> {
         // Exit the process with an error code if the listener could not be created
         std::process::exit(1);
     })?;
-    println!("--> Listening on {}", listener.local_addr().unwrap());
+    info!("Listening on {}", listener.local_addr().unwrap());
     // Start the server and handle errors gracefully
     if let Err(err) = axum::serve(listener, routes_all.into_make_service()).await {
         eprintln!("Server error: {}", err);
@@ -76,7 +90,7 @@ async fn main_response_mapper(
     req_method: Method,
     res: Response,
 ) -> Response {
-    println!("--> {:<12} - main_response_mapper", "RES_MAPPER");
+    debug!(" {:<12} - main_response_mapper", "RES_MAPPER");
     let uuid = Uuid::new_v4();
 
     let service_error = res.extensions().get::<Error>();
@@ -91,15 +105,15 @@ async fn main_response_mapper(
                 }
             });
 
-            println!("    -->  - client_error_body - {client_error_body:?}");
+            debug!("Client_error_body - {client_error_body:?}");
 
             (*status_code, Json(client_error_body)).into_response()
         });
-    println!("    --> server log line - {uuid} - Error: {service_error:?}");
-    println!();
+    debug!("Server log line - {uuid} - Error: {service_error:?}");
+    debug!("\n");
 
     let client_error = client_status_error.unzip().1;
-    log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
+    let _ = log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
 
     error_response.unwrap_or(res)
 }
@@ -135,7 +149,7 @@ struct HelloParams {
 // e.g., `GET /hello?name=foo`
 // The query parameter is extracted from the request
 async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
-    println!("--> {:<12} - handler_hello - {params:?}", "HANDLER");
+    debug!(" {:<12} - handler_hello - {params:?}", "HANDLER");
     // Unwrap the name parameter or use the default value "World"
     let name = params.name.as_deref().unwrap_or("World");
     // Return an HTML response with the name
@@ -145,7 +159,7 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
 // e.g., `GET /hello2/foo`
 // The path parameter is extracted from the request
 async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse {
-    println!("--> {:<12} - handler_hello2 - {name:?}", "HANDLER");
+    debug!(" {:<12} - handler_hello2 - {name:?}", "HANDLER");
 
     Html(format!("Hello, <strong>{name}</strong>"))
 }

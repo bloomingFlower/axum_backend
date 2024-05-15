@@ -2,6 +2,8 @@
 name = "axum_backend"
 version = "0.1.0"
 edition = "2021"
+description = "A backend for the Axum web framework"
+repository = "https://github.com/bloomingFlower/axum_backend"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,7 +30,8 @@ strum_macros = "0.26.2"
 # uuid is a library for generating UUIDs(version 4 means random UUIDs)
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
-
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 
 [dev-dependencies]
@@ -36,7 +39,6 @@ serde_with = "3.8.1"
 # anyhow = "1"
 # Color-eyre is a library for colorful error reports
 color-eyre = "0.6.3"
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
