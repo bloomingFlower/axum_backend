@@ -1,4 +1,5 @@
-use anyhow::Result;
+//use anyhow::Result;
+use color_eyre::eyre::Result;
 use serde_json::json;
 
 #[tokio::test]
@@ -17,7 +18,7 @@ async fn test() -> Result<()> {
     req_login.await?.print().await?;
 
     ht.do_get("/hello2/JYY2").await?.print().await?;
- 
+
     let req_create_ticket = ht.do_post(
         "/api/tickets",
         json!({

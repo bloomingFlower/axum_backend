@@ -1,3 +1,5 @@
 # Project exclude paths
 /target/
 rust_endpoint.iml
+.idea
+vcs.xml

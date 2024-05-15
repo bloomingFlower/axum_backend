@@ -4,7 +4,7 @@ use crate::model::ModelController;
 use axum::extract::{Path, Query};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, get_service};
-use axum::{Json, middleware, Router};
+use axum::{middleware, Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 use tokio::net::TcpListener;
@@ -72,7 +72,7 @@ async fn main_response_mapper(res: Response) -> Response {
 
     let service_error = res.extensions().get::<Error>();
     let client_status_error = service_error.map(|e| e.client_status_and_error());
-    let error_response = client_status_error
+    let _error_response = client_status_error
         .as_ref()
         .map(|(status_code, client_error)| {
             let client_error_body = json!({
@@ -89,7 +89,7 @@ async fn main_response_mapper(res: Response) -> Response {
 
     println!();
 
-            res
+    res
 }
 
 /// Static Routes under the root path
