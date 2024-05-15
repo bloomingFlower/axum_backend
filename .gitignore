@@ -1,5 +1,5 @@
 # Project exclude paths
 /target/
-rust_endpoint.iml
+axum_backend.iml
 .idea
 vcs.xml

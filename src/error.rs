@@ -1,11 +1,15 @@
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde::Serialize;
 
 /// Result type for this application with the Error type
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// Error type for this application
-#[derive(Debug, Clone, strum_macros::AsRefStr)]
+#[derive(Debug, Clone, Serialize, strum_macros::AsRefStr)]
+#[serde(tag = "type", content = "data")]
 pub enum Error {
     // Login Error
     LoginFail,
@@ -26,11 +30,11 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         println!("--> {:<12} - Error - {error:?}", "HANDLER", error = self);
         // Return a 500 Internal Server Error with the error message
-        
+
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        
+
         response.extensions_mut().insert(self);
-        
+
         response
     }
 }
@@ -41,17 +45,14 @@ impl Error {
         // #[allow(unreachable_patterns)]
         match self {
             Self::LoginFail => (StatusCode::UNAUTHORIZED, ClientError::LOGIN_FAIL),
-            
-            Self:: AuthFailNoAuthTokenCookie
+
+            Self::AuthFailNoAuthTokenCookie
             | Self::AuthFailTokenWrongFormat
             | Self::AuthFailCtxNotInRequestExtensions => {
                 (StatusCode::UNAUTHORIZED, ClientError::NO_AUTH)
             }
-            
-            _=> (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                ClientError::SERVER_ERROR,
-            ),
+
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVER_ERROR),
         }
     }
 }

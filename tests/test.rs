@@ -4,6 +4,13 @@ use serde_json::json;
 
 #[tokio::test]
 async fn test() -> Result<()> {
+    color_eyre::install()?;
+    tracing_subscriber::fmt::init();
+
+    let span = tracing::info_span!("test_span");
+    let _enter = span.enter();
+
+    tracing::info!("Starting test 'test'");
     let ht = httpc_test::new_client("http://localhost:3000")?;
     ht.do_get("/hello?name=JYY").await?.print().await?;
     ht.do_get("/hello2/JYY2").await?.print().await?;
@@ -30,5 +37,8 @@ async fn test() -> Result<()> {
     ht.do_delete("/api/tickets/1").await?.print().await?;
 
     ht.do_get("/api/tickets").await?.print().await?;
+
+    tracing::info!("Finished test 'test'");
+
     Ok(())
 }

@@ -1,5 +1,5 @@
 [package]
-name = "rust_endpoint"
+name = "axum_backend"
 version = "0.1.0"
 edition = "2021"
 
@@ -27,12 +27,16 @@ async-trait = "0.1.80"
 strum_macros = "0.26.2"
 # uuid is a library for generating UUIDs(version 4 means random UUIDs)
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
+serde_with = "3.8.1"
 
-eyre = "0.6.3"
-color-eyre = "0.6.3"
+
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error
-anyhow = "1"
+# anyhow = "1"
+# Color-eyre is a library for colorful error reports
+color-eyre = "0.6.3"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
