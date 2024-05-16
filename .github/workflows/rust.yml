@@ -3,10 +3,14 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
+      - 'LICENSE'
+      - 'Makefile'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
+      - 'LICENSE'
+      - 'Makefile'
 
 env:
   CARGO_TERM_COLOR: always

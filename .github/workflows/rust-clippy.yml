@@ -14,10 +14,14 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
+      - 'LICENSE'
+      - 'Makefile'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
+      - 'LICENSE'
+      - 'Makefile'
   schedule:
     - cron: '16 4 * * 6'
 
