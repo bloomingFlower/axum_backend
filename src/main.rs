@@ -5,6 +5,8 @@ mod error;
 mod log;
 mod model;
 mod web;
+// #[cfg(test)] // Commented during the early development
+mod _dev_utils;
 
 /// Export the Error and Result types
 pub use self::error::{Error, Result};
