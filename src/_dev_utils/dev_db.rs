@@ -13,8 +13,8 @@ const PG_DEV_POSTGRES_URL: &str = "postgres://dev:dev@localhost:5432/dev";
 const PG_DEV_APP_URL: &str = "postgres://dev_app:dev_app@localhost:5432/dev_app";
 
 // sql file path
-const SQL_RECREATE_DB: &str = "src/_dev_utils/00-recreate-db.sql";
-const SQL_DIR: &str = "src/dev_initial";
+const SQL_RECREATE_DB: &str = "sql/dev_initial/00-recreate-db.sql";
+const SQL_DIR: &str = "sql/dev_initial";
 
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     // Create the database pool

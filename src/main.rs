@@ -20,13 +20,12 @@ use crate::web::routes_static;
 use axum::extract::{Path, Query};
 use axum::http::{Method, Uri};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::{get, get_service};
+use axum::routing::get;
 use axum::{middleware, Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
@@ -40,6 +39,9 @@ async fn main() -> Result<()> {
         .with_target(false)
         .with_env_filter(EnvFilter::from_default_env())
         .init();
+
+    // For DEV ONLY
+    _dev_utils::init_dev().await;
 
     // Initialize the Model Controller and wait for it to be ready
     let mc = ModelController::new().await?;
@@ -118,12 +120,6 @@ async fn main_response_mapper(
     let _ = log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
 
     error_response.unwrap_or(res)
-}
-
-/// Static Routes under the root path
-fn routes_static() -> Router {
-    // Serve the current directory as static files under the root path
-    Router::new().nest_service("/", get_service(ServeDir::new("./")))
 }
 
 //region Hello Routes
