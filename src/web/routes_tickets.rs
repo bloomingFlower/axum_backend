@@ -1,5 +1,5 @@
 use crate::ctx::Ctx;
-use crate::model::{ModelController, Ticket, TicketForCreate};
+use crate::model::model::{ModelController, Ticket, TicketForCreate};
 use crate::Result;
 use axum::extract::{Path, State};
 use axum::routing::{delete, post};

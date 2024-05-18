@@ -9,7 +9,14 @@ RUST_LOG="axum_backend=debug"
 
 # Service Environment variables.
 # IMPORTANT: These are only used for the `cargo run` command.
-# Fir deoployed environments, should be managed by container orchestration.
+# For deoployed environments, should be managed by container orchestration.
+
+## Secrets
+# Keys and passwords below are for local development only.
+# i.e., Encryption not required.
+
+SERVICE_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
+
 
 ## ConfigMap
 

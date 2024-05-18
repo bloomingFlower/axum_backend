@@ -1,5 +1,5 @@
 use crate::ctx::Ctx;
-use crate::model::ModelController;
+use crate::model::model::ModelController;
 use crate::web::AUTH_TOKEN;
 use crate::Error;
 use crate::Result;

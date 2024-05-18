@@ -1,3 +1,4 @@
+use crate::model::store;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -25,6 +26,9 @@ pub enum Error {
 
     // Config Error
     ConfigMissingEnvVar { name: &'static str },
+
+    // DB Error
+    FailToCreatePool(String),
 }
 
 // region: IntoResponse
@@ -43,6 +47,14 @@ impl IntoResponse for Error {
     }
 }
 // endregion: IntoResponse
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl std::error::Error for Error {}
 
 impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {

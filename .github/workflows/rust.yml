@@ -20,16 +20,30 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16.3
+        env:
+          POSTGRES_USER: dev_app
+          POSTGRES_PASSWORD: dev_app
+          POSTGRES_DB: dev_app
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    # Add a step to run the server before tests
-    - name: Start Server
-      run: cargo run &
-    # Ensure the server has time to start up
-    - name: Wait for Server
-      run: sleep 5
-    # Finally, run tests
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose
+      # Ensure the DB has time to start up
+      - name: Wait for DB
+        run: sleep 10
+      # Add a step to run the server before tests
+      - name: Start Server
+        run: cargo run &
+      # Ensure the server has time to start up
+      - name: Wait for Server
+        run: sleep 5
+      # Finally, run tests
+      - name: Run tests
+        run: cargo test --verbose

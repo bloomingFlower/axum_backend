@@ -15,7 +15,7 @@ pub use config::load_config;
 /// Import the necessary modules
 use crate::ctx::Ctx;
 use crate::log::log_request;
-use crate::model::ModelController;
+use crate::model::model::ModelController;
 use crate::web::routes_static;
 use axum::extract::{Path, Query};
 use axum::http::{Method, Uri};
