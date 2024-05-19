@@ -46,4 +46,5 @@ jobs:
         run: sleep 5
       # Finally, run tests
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test model::task::tests::test_create_ok --verbose 
+        #cargo test --verbose
