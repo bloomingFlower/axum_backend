@@ -35,16 +35,14 @@ sqlx = { version = "0.7.4", features = ["runtime-tokio-rustls", "uuid", "time", 
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-anyhow = "1.0.86"
 
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error
-# anyhow = "1"
+anyhow = "1.0.86"
 # Color-eyre is a library for colorful error reports
 color-eyre = "0.6.3"
-
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
-
+# Serial_test is a library for serializing test output
 serial_test = "3.1.1"
