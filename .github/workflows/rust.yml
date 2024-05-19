@@ -37,7 +37,7 @@ jobs:
         run: cargo build --verbose
       # Ensure the DB has time to start up
       - name: Wait for DB
-        run: sleep 10
+        run: sleep 60
       # Add a step to run the server before tests
       - name: Start Server
         run: cargo run &

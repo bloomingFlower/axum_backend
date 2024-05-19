@@ -1,8 +1,8 @@
-pub mod model;
-pub(crate) mod store;
+mod error;
+mod store;
 pub mod task;
 
-use crate::error::Result;
+pub use self::error::{Error, Result};
 use crate::model::store::{new_db_pool, Db};
 
 #[derive(Clone)]

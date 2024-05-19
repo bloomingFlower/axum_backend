@@ -1,4 +1,4 @@
-use crate::{web, Error, Result};
+use crate::web::{self, Error, Result};
 use axum::routing::post;
 use axum::Json;
 use axum::Router;
