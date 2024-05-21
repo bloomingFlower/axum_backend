@@ -8,7 +8,7 @@ cargo watch -q -c -w src/ -w .cargo/ -x 'run'
 ```
 ### Run Tests
 ```sh
-cargo watch -q -c -w tests/ -x 'test -q test -- --nocapture'
+cargo watch -q -c -x "test model::task -- --nocapture"
 ```
 
 ### Starting the DB
