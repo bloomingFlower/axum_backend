@@ -14,7 +14,7 @@ pub async fn main_response_mapper(
     req_method: Method,
     res: Response,
 ) -> Response {
-    debug!("{:<12} - mw_reponse_map", "RES_MAPPER");
+    debug!("{:<12} - main_response_mapper", "RES_MAPPER");
     let uuid = Uuid::new_v4();
 
     // -- Get the eventual response error.

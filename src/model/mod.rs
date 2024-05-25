@@ -15,7 +15,7 @@ impl ModelManager {
     /// Create Constructor
     pub async fn new() -> Result<Self> {
         let db = new_db_pool().await?;
-        Ok(Self { db })
+        Ok(ModelManager { db })
     }
 
     /// Return the Db pool reference

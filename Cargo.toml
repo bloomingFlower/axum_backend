@@ -2,6 +2,7 @@
 name = "axum_backend"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.71.0"
 description = "A backend for the Axum web framework"
 repository = "https://github.com/bloomingFlower/axum_backend"
 
@@ -11,7 +12,7 @@ repository = "https://github.com/bloomingFlower/axum_backend"
 # Tokio is an asynchronous runtime for Rust
 tokio = { version = "1.37.0", features = ["full"] }
 # Axum is a web framework based on hyper, the Rust HTTP library
-axum = { version = "0.7.5", features = ["macros"] }
+axum = { version = "0.7.5" }
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
 # Serde is a serialization/deserialization library for Rust
@@ -31,9 +32,8 @@ strum_macros = "0.26.2"
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
 # sqlx is a database driver for Rust
-sqlx = { version = "0.7.4", features = ["runtime-tokio-rustls", "uuid", "time", "postgres"] }
-# sql builder is a library for building SQL queries
-sqlb = "0.4.0"
+sqlx = { version = "0.6.3", features = [ "runtime-tokio-rustls", "postgres", "uuid", "time" ] }
+sqlb = "0.3.8" # Optional
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

@@ -10,16 +10,12 @@ use tracing::debug;
 /// Create the Login Routes and return the Router
 pub fn routes() -> Router {
     // Create the Login Route with the POST method and the api_login handler
-    Router::new().route("/api/login", post(api_login))
+    Router::new().route("/api/login", post(api_login_handler))
 }
 
 /// Login Handler that returns a JSON response with a status
-async fn api_login(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
-    debug!(
-        "--> {:<12} - api_login - {payload:?}",
-        "HANDLER",
-        payload = payload
-    );
+async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
+    debug!("--> {:<12} - api_login_handler", "HANDLER");
 
     // TODO: Implement a real database check
     // Check the username and password
@@ -35,7 +31,7 @@ async fn api_login(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json
     // Create the response body
     let body = Json(json!({
         "result": {
-            "status": "ok"
+            "success": true
         }
     }));
 

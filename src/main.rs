@@ -16,16 +16,12 @@ pub use config::load_config;
 use crate::model::ModelManager;
 use crate::web::mw_auth::mw_ctx_resolver;
 use crate::web::mw_res_map::main_response_mapper;
-use crate::web::routes_static;
+use crate::web::{routes_login, routes_static};
 
-use axum::extract::{Path, Query};
-use axum::response::{Html, IntoResponse};
-use axum::routing::get;
 use axum::{middleware, Router};
-use serde::Deserialize;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use tracing::{debug, info};
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 /// Tokio Runtime Entry Point
@@ -46,9 +42,9 @@ async fn main() -> Result<()> {
     // Initialize the Router with all the routes
     let routes_all = Router::new()
         // Merge the Hello Routes
-        .merge(routes_hello())
+        // .merge(routes_hello())
         // Merge the Login Routes
-        .merge(web::routes_login::routes())
+        .merge(routes_login::routes())
         // Nest the API Routes under the /api path
         // .nest("/api", routes_apis)
         // Add a middleware to map the all responses
@@ -74,43 +70,43 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-//region Hello Routes
-/// Hello Routes under the root path
-fn routes_hello() -> Router {
-    Router::new()
-        // e.g., `GET /hello` with a query parameter
-        .route("/hello", get(handler_hello))
-        // e.g., `GET /hello2/foo` with a path parameter
-        .route("/hello2/:name", get(handler_hello2))
-}
-//endregion
-
-//region: Handler Hello
-/// Hello Parameters
-// Debug is used to print the struct({params:?}) in the log
-// serde Deserialize is used to parse the query parameters(JSON, Query String, etc.)
-#[derive(Debug, Deserialize)]
-struct HelloParams {
-    // Option is used to make the field optional
-    name: Option<String>,
-}
-
-/// Hello Handler with a query parameter
-// e.g., `GET /hello?name=foo`
-// The query parameter is extracted from the request
-async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
-    debug!(" {:<12} - handler_hello - {params:?}", "HANDLER");
-    // Unwrap the name parameter or use the default value "World"
-    let name = params.name.as_deref().unwrap_or("World");
-    // Return an HTML response with the name
-    Html(format!("Hello, <strong>{name}</strong>"))
-}
-
-// e.g., `GET /hello2/foo`
-// The path parameter is extracted from the request
-async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse {
-    debug!(" {:<12} - handler_hello2 - {name:?}", "HANDLER");
-
-    Html(format!("Hello, <strong>{name}</strong>"))
-}
-//endregion: Handler Hello
+// //region Hello Routes
+// /// Hello Routes under the root path
+// fn routes_hello() -> Router {
+//     Router::new()
+//         // e.g., `GET /hello` with a query parameter
+//         .route("/hello", get(handler_hello))
+//         // e.g., `GET /hello2/foo` with a path parameter
+//         .route("/hello2/:name", get(handler_hello2))
+// }
+// //endregion
+//
+// //region: Handler Hello
+// /// Hello Parameters
+// // Debug is used to print the struct({params:?}) in the log
+// // serde Deserialize is used to parse the query parameters(JSON, Query String, etc.)
+// #[derive(Debug, Deserialize)]
+// struct HelloParams {
+//     // Option is used to make the field optional
+//     name: Option<String>,
+// }
+//
+// /// Hello Handler with a query parameter
+// // e.g., `GET /hello?name=foo`
+// // The query parameter is extracted from the request
+// async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
+//     debug!(" {:<12} - handler_hello - {params:?}", "HANDLER");
+//     // Unwrap the name parameter or use the default value "World"
+//     let name = params.name.as_deref().unwrap_or("World");
+//     // Return an HTML response with the name
+//     Html(format!("Hello, <strong>{name}</strong>"))
+// }
+//
+// // e.g., `GET /hello2/foo`
+// // The path parameter is extracted from the request
+// async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse {
+//     debug!(" {:<12} - handler_hello2 - {name:?}", "HANDLER");
+//
+//     Html(format!("Hello, <strong>{name}</strong>"))
+// }
+// //endregion: Handler Hello
