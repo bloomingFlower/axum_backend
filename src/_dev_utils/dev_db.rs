@@ -62,7 +62,7 @@ async fn p_exec(db: &Db, sql_file: &str) -> Result<(), sqlx::Error> {
 
 async fn new_db_pool(db_conn_url: &str) -> Result<Db, sqlx::Error> {
     PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(1)
         .acquire_timeout(Duration::from_millis(500))
         .connect(db_conn_url)
         .await
