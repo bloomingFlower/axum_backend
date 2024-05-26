@@ -1,6 +1,6 @@
 use crate::ctx::Ctx;
 use crate::model::base::{self, DbBmc};
-use crate::model::{Error, ModelManager, Result};
+use crate::model::{ModelManager, Result};
 use serde::{Deserialize, Serialize};
 use sqlb::{Fields, HasFields};
 use sqlx::postgres::PgRow;
@@ -49,7 +49,7 @@ impl UserBy for UserForAuth {}
 pub struct UserBmc;
 
 impl DbBmc for UserBmc {
-    const TABLE: &'static str = "users";
+    const TABLE: &'static str = "user";
 }
 
 impl UserBmc {

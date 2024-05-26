@@ -1,5 +1,6 @@
 /// Import the necessary modules
 mod config;
+mod crypt;
 mod ctx;
 mod error;
 mod log;

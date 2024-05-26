@@ -1,4 +1,5 @@
 [![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
+[![rust-clippy analyze](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml)
 # Rust Web Server
 
 ## How to Run
@@ -8,7 +9,7 @@ cargo watch -q -c -w src/ -w .cargo/ -x 'run'
 ```
 ### Run Tests
 ```sh
-cargo watch -q -c -x "test model::task -- --nocapture"
+cargo watch -q -c -x "test -- --nocapture"
 ```
 
 ### Starting the DB
@@ -32,3 +33,6 @@ docker exec -it pg psql -U dev -d postgres
 # (optional) print all sql statements
 ALTER DATABASE postgres SET log_statement = 'all';
 ```
+
+## Future Work
+- [ ] ORM (sqlb > sea-orm)
