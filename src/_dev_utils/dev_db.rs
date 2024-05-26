@@ -1,3 +1,6 @@
+use crate::ctx::Ctx;
+use crate::model::user::{User, UserBmc};
+use crate::model::ModelManager;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use std::error::Error;
@@ -15,6 +18,8 @@ const PG_DEV_APP_URL: &str = "postgres://dev_app:dev_app@localhost:5432/dev_app"
 // sql file path
 const SQL_RECREATE_DB: &str = "sql/dev_initial/00-recreate-db.sql";
 const SQL_DIR: &str = "sql/dev_initial";
+
+const DEMO_PWD: &str = "demo";
 
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
@@ -42,6 +47,16 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+
+    let mm = ModelManager::new().await?;
+    let ctx = Ctx::root_ctx();
+
+    let demo1_user: User = UserBmc::first_by_username(&ctx, &mm, "demo1")
+        .await?
+        .unwrap();
+
+    UserBmc::update_pwd(&ctx, &mm, demo1_user.id, DEMO_PWD).await?;
+    info!("{:<12} - init_dev_db() - set demo1 pwd", "FOR-DEV-ONLY");
 
     Ok(())
 }

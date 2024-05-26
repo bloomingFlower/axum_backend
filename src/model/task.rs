@@ -102,7 +102,7 @@ mod tests {
 
         // -- Exec
         let res = TaskBmc::get(&ctx, &mm, fx_id).await;
-        println!("{:?}", res);
+
         // -- Check
         assert!(
             matches!(

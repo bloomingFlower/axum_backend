@@ -17,6 +17,11 @@ RUST_LOG="axum_backend=debug"
 
 SERVICE_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
 
+SERVICE_PWD_KEY = "uY4ZWS0Ge-3E-qUC5VnKr0DMmy2YFkng1zHW0iAF2kNyXtctjF9dGdBmdj9jMkwJiBUzNl533lnTVq7DkqOUdA"
+
+SERVICE_TOKEN_KEY= "KnPH2IsuLL1eT-bRF4fQnQ5MU9c162sVZqtde2DqCHJDmzVaEwBNG-57MOLW1U_ZsmMZRHkBPwA7DbmDh-86NQ"
+
+SERVICE_TOKEN_DURATION_SEC="1800"
 
 ## ConfigMap
 

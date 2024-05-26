@@ -1,3 +1,4 @@
+use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::base::{self, DbBmc};
 use crate::model::{ModelManager, Result};
@@ -77,6 +78,25 @@ impl UserBmc {
             .await?;
 
         Ok(user)
+    }
+
+    pub async fn update_pwd(ctx: &Ctx, mm: &ModelManager, id: i64, pwd_clear: &str) -> Result<()> {
+        let db = mm.db();
+
+        let user: UserForLogin = Self::get(ctx, mm, id).await?;
+        let pwd_enc = pwd::encrypt_pwd(&EncryptContent {
+            salt: user.password_salt.to_string(),
+            content: pwd_clear.to_string(),
+        })?;
+
+        sqlb::update()
+            .table(Self::TABLE)
+            .and_where("id", "=", id)
+            .data(vec![("password", pwd_enc.to_string()).into()])
+            .exec(db)
+            .await?;
+
+        Ok(())
     }
 }
 
