@@ -1,4 +1,4 @@
-use crate::web;
+use crate::{model, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
@@ -11,9 +11,18 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     // -- Login
     LoginFail,
-
+    LoginFailUsernameNotFound,
     // -- CtxExtError
     CtxExt(web::mw_auth::CtxExtError),
+
+    // -- Modules
+    Model(model::Error),
+}
+
+impl From<model::Error> for Error {
+    fn from(val: model::Error) -> Self {
+        Error::Model(val)
+    }
 }
 
 // region:    --- Axum IntoResponse

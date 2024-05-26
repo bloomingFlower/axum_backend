@@ -39,19 +39,19 @@ async fn main() -> Result<()> {
     _dev_utils::init_dev().await;
 
     // Initialize the Model Controller and wait for it to be ready
-    let mc = ModelManager::new().await?;
+    let mm = ModelManager::new().await?;
     // Initialize the Router with all the routes
     let routes_all = Router::new()
         // Merge the Hello Routes
         // .merge(routes_hello())
         // Merge the Login Routes
-        .merge(routes_login::routes())
+        .merge(routes_login::routes(mm.clone()))
         // Nest the API Routes under the /api path
         // .nest("/api", routes_apis)
         // Add a middleware to map the all responses
         .layer(middleware::map_response(main_response_mapper))
         // Add a middleware to resolve the context
-        .layer(middleware::from_fn_with_state(mc.clone(), mw_ctx_resolver))
+        .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
         // Add a fallback service to serve static files
