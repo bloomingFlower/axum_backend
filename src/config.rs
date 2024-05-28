@@ -16,7 +16,7 @@ pub fn load_config() -> &'static Config {
 pub struct Config {
     pub PWD_KEY: Vec<u8>,
     pub TOKEN_KEY: Vec<u8>,
-    pub TOKEN_DURATION_SEC: f64,
+    pub TOKEN_DURATION_SEC: i64,
 
     pub DB_URL: String,
     pub WEB_FOLDER: String,

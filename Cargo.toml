@@ -42,6 +42,7 @@ rand = "0.8.5"
 hmac = "0.12.1"
 sha2 = "0.10.8"
 base64-url = "3.0.0"
+time = "0.3.36"
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

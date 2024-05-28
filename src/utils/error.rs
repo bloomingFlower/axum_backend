@@ -1,22 +1,11 @@
-use serde::Serialize;
-
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug)]
 pub enum Error {
-    // Key
-    KeyFailHmac,
+    DateFailParse(String),
 
-    // Pwd
-    PwdNotMatching,
-
-    // Token
-    TokenInvalidFormat,
-    TokenCannotDecodeIdent,
-    TokenCannotDecodeExp,
-    TokenSignatureNotMatching,
-    TokenExpNotIso,
-    TokenExpired,
+    // Base64
+    FailToB64uDecode,
 }
 
 impl core::fmt::Display for Error {
