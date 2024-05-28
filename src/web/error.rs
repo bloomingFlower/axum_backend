@@ -12,6 +12,9 @@ pub enum Error {
     // -- Login
     LoginFail,
     LoginFailUsernameNotFound,
+    LoginFailUserHasNoPwd { user_id: i64 },
+    LoginFailPwdNotMatching { user_id: i64 },
+
     // -- CtxExtError
     CtxExt(web::mw_auth::CtxExtError),
 
@@ -60,7 +63,12 @@ impl Error {
 
         #[allow(unreachable_patterns)]
         match self {
-            // -- Login/Auth
+            // -- Login
+            LoginFailUsernameNotFound
+            | LoginFailUserHasNoPwd { .. }
+            | LoginFailPwdNotMatching { .. } => (StatusCode::FORBIDDEN, ClientError::LOGIN_FAIL),
+
+            // -- Auth
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
             // -- Fallback.
@@ -75,6 +83,7 @@ impl Error {
 #[derive(Debug, strum_macros::AsRefStr)]
 #[allow(non_camel_case_types)]
 pub enum ClientError {
+    LOGIN_FAIL,
     NO_AUTH,
     SERVICE_ERROR,
 }

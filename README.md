@@ -10,6 +10,7 @@ cargo watch -q -c -w src/ -w .cargo/ -x 'run'
 ### Run Tests
 ```sh
 cargo watch -q -c -x "test -- --nocapture"
+cargo watch -q -c -w examples/ -x "run --example test"
 ```
 
 ### Starting the DB

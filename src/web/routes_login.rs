@@ -1,3 +1,4 @@
+use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::user::{UserBmc, UserForLogin};
 use crate::model::ModelManager;
@@ -25,7 +26,7 @@ async fn api_login_handler(
     cookies: Cookies,
     Json(payload): Json<LoginPayload>,
 ) -> Result<Json<Value>> {
-    debug!("--> {:<12} - api_login_handler", "HANDLER");
+    debug!("{:<12} - api_login_handler", "HANDLER");
 
     let LoginPayload {
         username,
@@ -36,6 +37,20 @@ async fn api_login_handler(
     let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &mm, &username)
         .await?
         .ok_or(Error::LoginFailUsernameNotFound)?;
+
+    let user_id = user.id;
+    let Some(pwd) = user.password else {
+        return Err(Error::LoginFailUserHasNoPwd { user_id });
+    };
+
+    pwd::validate_pwd(
+        &EncryptContent {
+            salt: user.password_salt.to_string(),
+            content: pwd_clear.clone(),
+        },
+        &pwd,
+    )
+    .map_err(|_| Error::LoginFailPwdNotMatching { user_id })?;
 
     // FIXME: Implement a real token generation
     // Add a cookie with the token to the response cookies list
