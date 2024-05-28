@@ -1,23 +1,42 @@
 use crate::crypt::{encrypt_into_b64u, EncryptContent, Error, Result};
 use crate::load_config;
-use crate::utils::{b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc};
+use crate::utils::{b64u_decode, b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc};
 use std::fmt::Display;
-use tracing::callsite::Identifier;
+use std::str::FromStr;
 
+#[derive(Debug)]
 pub struct Token {
     pub identifier: String, // The identifier of the token
     pub exp: String,        // The expiration date of the token
     pub sign_b64u: String,  // The signature of the token
 }
 
+impl FromStr for Token {
+    type Err = Error;
+
+    fn from_str(token_str: &str) -> std::result::Result<Self, Self::Err> {
+        let splits: Vec<&str> = token_str.split('.').collect();
+        if splits.len() != 3 {
+            return Err(Error::TokenInvalidFormat);
+        }
+        let (ident_b64u, exp_b64u, sign_b64u) = (splits[0], splits[1], splits[2]);
+
+        Ok(Self {
+            identifier: b64u_decode(ident_b64u).map_err(|_| Error::TokenCannotDecodeIdent)?,
+            exp: b64u_decode(exp_b64u).map_err(|_| Error::TokenCannotDecodeExp)?,
+            sign_b64u: sign_b64u.to_string(),
+        })
+    }
+}
+
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Token {{ {}.{}.{} }}",
+            "{}.{}.{}",
             b64u_encode(&self.identifier),
             b64u_encode(&self.exp),
-            &self.sign_b64u
+            self.sign_b64u
         )
     }
 }
@@ -87,13 +106,29 @@ mod tests {
 
     #[test]
     fn test_token_display_ok() -> Result<()> {
+        let fx_toekn_str = "ZngtaWRlbnRpZmllci0wMQ.MjAyNC0wNS0yOFQyMzo1MDowMFo.sign-b64u-encoded";
         let fx_token = Token {
             identifier: "fx-identifier-01".to_string(),
             exp: "2024-05-28T23:50:00Z".to_string(),
             sign_b64u: "sign-b64u-encoded".to_string(),
         };
 
-        println!("--> fx_token: {}", fx_token);
+        assert_eq!(fx_toekn_str, fx_token.to_string());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_token_from_str_ok() -> Result<()> {
+        let fx_toekn_str = "ZngtaWRlbnRpZmllci0wMQ.MjAyNC0wNS0yOFQyMzo1MDowMFo.sign-b64u-encoded";
+        let fx_token = Token {
+            identifier: "fx-identifier-01".to_string(),
+            exp: "2024-05-28T23:50:00Z".to_string(),
+            sign_b64u: "sign-b64u-encoded".to_string(),
+        };
+
+        let token: Token = fx_toekn_str.parse()?;
+        assert_eq!(format!("{:?}", token), format!("{:?}", fx_token));
 
         Ok(())
     }
