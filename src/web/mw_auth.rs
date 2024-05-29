@@ -26,6 +26,7 @@ pub async fn mw_require_auth(ctx: Result<Ctx>, req: Request<Body>, next: Next) -
     Ok(next.run(req).await)
 }
 
+/// Middleware to resolve the context from the request cookies
 pub async fn mw_ctx_resolver(
     _mc: State<ModelController>,
     cookies: Cookies,
@@ -34,7 +35,7 @@ pub async fn mw_ctx_resolver(
 ) -> Result<Response> {
     println!("--> {:<12} - mw_ctx_resolver", "MIDDLEWARE");
     let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
-
+    
     let result_ctx = match auth_token
         .ok_or(Error::AuthFailNoAuthTokenCookie)
         .and_then(parse_token)
@@ -69,6 +70,11 @@ impl<S: Send + Sync> FromRequestParts<S> for Ctx {
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
         println!("--> {:<12} - Ctx", "EXTRACTOR");
 
+        // parts - HTTP Request except the body, headers
+        // extensions - A map of extensions that can be used to share data between different components
+        // get - Get an extension from the request
+        // ok_or - Convert an Option to a Result
+        // clone - Clone the Ctx
         parts
             .extensions
             .get::<Result<Ctx>>()
@@ -83,7 +89,7 @@ fn parse_token(token: String) -> Result<(u64, String, String)> {
     // Parse the token into its parts
     let (_whole, _user_id, _exp, _sign) = regex_captures!(r#"^user-(\d+)\.(\w+)\.(\w+)"#, &token)
         .ok_or(Error::AuthFailTokenWrongFormat)?;
-    // Parse the user_id into a u64
+    // Parse the user_id into an u64
     let user_id = _user_id
         .parse()
         .map_err(|_| Error::AuthFailTokenWrongFormat)?;

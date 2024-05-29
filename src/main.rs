@@ -4,11 +4,13 @@ use crate::model::ModelController;
 use axum::extract::{Path, Query};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, get_service};
-use axum::{middleware, Router};
+use axum::{Json, middleware, Router};
 use serde::Deserialize;
+use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
+use uuid::Uuid;
 
 mod ctx;
 mod error;
@@ -35,6 +37,7 @@ async fn main() -> Result<()> {
         .nest("/api", routes_apis)
         // Add a middleware to map the all responses
         .layer(middleware::map_response(main_response_mapper))
+        // Add a middleware to resolve the context
         .layer(middleware::from_fn_with_state(
             mc.clone(),
             web::mw_auth::mw_ctx_resolver,
@@ -65,8 +68,28 @@ async fn main() -> Result<()> {
 /// Main Response Mapper Middleware
 async fn main_response_mapper(res: Response) -> Response {
     println!("--> {:<12} - main_response_mapper", "RES_MAPPER");
+    let uuid = Uuid::new_v4();
+
+    let service_error = res.extensions().get::<Error>();
+    let client_status_error = service_error.map(|e| e.client_status_and_error());
+    let error_response = client_status_error
+        .as_ref()
+        .map(|(status_code, client_error)| {
+            let client_error_body = json!({
+                "error": {
+                    "type": client_error.as_ref(),
+                    "req_uuid": uuid.to_string(),
+                }
+            });
+
+            println!("    -->  - client_error_body - {client_error_body:?}");
+
+            (*status_code, Json(client_error_body).into_response())
+        });
+
     println!();
-    res
+
+            res
 }
 
 /// Static Routes under the root path
