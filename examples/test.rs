@@ -21,6 +21,17 @@ async fn main() -> Result<()> {
         }),
     );
     req_login.await?.print().await?;
+
+    ht.do_get("/hello").await?.print().await?;
+
+    let req_logoff = ht.do_post(
+        "/api/logoff",
+        json!({
+            "logoff": true
+        }),
+    );
+    req_logoff.await?.print().await?;
+
     tracing::info!("Finished test 'test'");
 
     Ok(())

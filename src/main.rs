@@ -16,10 +16,12 @@ pub use config::load_config;
 
 /// Import the necessary modules
 use crate::model::ModelManager;
-use crate::web::mw_auth::mw_ctx_resolver;
+use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
 use crate::web::{routes_login, routes_static};
 
+use axum::response::Html;
+use axum::routing::get;
 use axum::{middleware, Router};
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
@@ -41,12 +43,17 @@ async fn main() -> Result<()> {
 
     // Initialize the Model Controller and wait for it to be ready
     let mm = ModelManager::new().await?;
+
+    let routes_hello = Router::new()
+        .route("/hello", get(|| async { Html("Hello World") }))
+        .route_layer(middleware::from_fn(mw_require_auth));
+
     // Initialize the Router with all the routes
     let routes_all = Router::new()
-        // Merge the Hello Routes
-        // .merge(routes_hello())
         // Merge the Login Routes
         .merge(routes_login::routes(mm.clone()))
+        // Merge the Hello Routes
+        .merge(routes_hello)
         // Nest the API Routes under the /api path
         // .nest("/api", routes_apis)
         // Add a middleware to map the all responses
