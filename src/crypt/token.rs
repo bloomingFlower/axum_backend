@@ -41,11 +41,13 @@ impl Display for Token {
     }
 }
 
+/// Generate a web token for the user
 pub fn generate_web_token(user: &str, salt: &str) -> Result<Token> {
     let config = &load_config();
     _generate_token(user, config.TOKEN_DURATION_SEC, salt, &config.TOKEN_KEY)
 }
 
+/// Validate a web token
 pub fn validate_web_token(origin_token: &Token, salt: &str) -> Result<()> {
     let config = &load_config();
     _validate_token_sign_and_exp(origin_token, salt, &config.TOKEN_KEY)?;

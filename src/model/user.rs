@@ -8,6 +8,9 @@ use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 use uuid::Uuid;
 
+/// User model
+/// (FromRow trait is used to convert the result from the database to the struct)
+/// (Fields trait is used to get the fields of the struct. It is used in the orm libraries)
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct User {
     pub id: i64,
@@ -41,6 +44,11 @@ pub struct UserForAuth {
     pub token_salt: Uuid,
 }
 
+/// UserBy trait is used to get the user by different fields
+/// (For example, get user by id, get user by username)
+/// (HasFields trait is used to get the fields of the struct. It is used in the orm libraries)
+/// (Unpin trait is used to make the struct usable in async functions. This trait enables the struct to be moved across threads(memory))
+/// (Send trait is used to make the struct usable in async functions)
 pub trait UserBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl UserBy for User {}
@@ -61,6 +69,7 @@ impl UserBmc {
         base::get::<Self, _>(ctx, mm, id).await
     }
 
+    /// Get user by username
     pub async fn first_by_username<E>(
         _ctx: &Ctx,
         mm: &ModelManager,

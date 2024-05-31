@@ -32,7 +32,12 @@ strum_macros = "0.26.2"
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
 # sqlx is a database driver for Rust
-sqlx = { version = "0.6.3", features = [ "runtime-tokio-rustls", "postgres", "uuid", "time" ] }
+sqlx = { version = "0.6.3", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "uuid",
+    "time",
+] }
 sqlb = "0.3.8" # Optional
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"

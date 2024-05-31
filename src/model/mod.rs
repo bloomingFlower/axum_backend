@@ -2,9 +2,11 @@ mod base;
 mod error;
 mod store;
 pub mod task;
-pub(crate) mod user;
+
+pub mod user;
 
 pub use self::error::{Error, Result};
+// Database Field
 use crate::model::store::{new_db_pool, Db};
 
 #[derive(Clone)]

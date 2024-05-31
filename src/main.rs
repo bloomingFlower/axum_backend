@@ -32,20 +32,23 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 /// Async Main Function that returns a Result
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .without_time() // For local development
-        .with_target(false)
-        .with_env_filter(EnvFilter::from_default_env())
+    tracing_subscriber::fmt() // For standard output
+        .without_time() // For local development(simplicity)
+        .with_target(false) // For local development(simplicity)
+        .with_env_filter(EnvFilter::from_default_env()) // set log level(config.toml)
         .init();
 
     // For DEV ONLY
     _dev_utils::init_dev().await;
 
-    // Initialize the Model Controller and wait for it to be ready
+    // Initialize the Model Manager and wait for it to be ready
     let mm = ModelManager::new().await?;
 
+    // Initialize the new Router with the Hello Routes
     let routes_hello = Router::new()
+        // Http and DB operations should be async
         .route("/hello", get(|| async { Html("Hello World") }))
+        // Check ctx and token
         .route_layer(middleware::from_fn(mw_require_auth));
 
     // Initialize the Router with all the routes

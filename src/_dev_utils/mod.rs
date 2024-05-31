@@ -13,11 +13,12 @@ use tracing::info;
 /// Initialize environment for local development.
 /// (for early development, will be called from main()).
 pub async fn init_dev() {
-    static INIT: OnceCell<()> = OnceCell::const_new();
+    static INIT: OnceCell<()> = OnceCell::const_new(); // init() is called only once
 
     INIT.get_or_init(|| async {
         info!("{:<12} - init_dev_all()", "FOR-DEV-ONLY");
 
+        // Initialize the Development Database
         dev_db::init_dev_db().await.unwrap();
     })
     .await;
@@ -31,7 +32,7 @@ pub async fn init_test() -> ModelManager {
         .get_or_init(|| async {
             init_dev().await;
             // Using unwrap for
-            ModelManager::new().await.unwrap()
+            ModelManager::new().await.expect("Failed to initialize ModelManager")
         })
         .await;
 

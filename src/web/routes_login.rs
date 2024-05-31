@@ -18,6 +18,7 @@ pub fn routes(mm: ModelManager) -> Router {
     Router::new()
         .route("/api/login", post(api_login_handler))
         .route("/api/logoff", post(api_logoff_handler))
+        // mm is passed to the State that can be accessed in the handler with State(ModelManager)
         .with_state(mm)
 }
 
@@ -32,6 +33,7 @@ async fn api_login_handler(
 
     let LoginPayload {
         username,
+        // password is the clear text password
         password: pwd_clear,
     } = payload;
     let root_ctx = Ctx::root_ctx();
@@ -41,6 +43,7 @@ async fn api_login_handler(
         .ok_or(Error::LoginFailUsernameNotFound)?;
 
     let user_id = user.id;
+    // Check if the user has a password
     let Some(pwd) = user.password else {
         return Err(Error::LoginFailUserHasNoPwd { user_id });
     };
@@ -76,6 +79,7 @@ struct LoginPayload {
 // endregion: --- Login
 
 // region:    --- Logoff
+/// Logoff Handler that returns a JSON response with a status
 async fn api_logoff_handler(
     cookies: Cookies,
     Json(payload): Json<LogoffPayload>,
@@ -96,6 +100,7 @@ async fn api_logoff_handler(
     Ok(body)
 }
 
+/// Logoff Payload Struct for Deserialization
 #[derive(Debug, Deserialize)]
 struct LogoffPayload {
     logoff: bool,
