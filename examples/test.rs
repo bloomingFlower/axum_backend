@@ -22,7 +22,57 @@ async fn main() -> Result<()> {
     );
     req_login.await?.print().await?;
 
-    ht.do_get("/hello").await?.print().await?;
+    // ht.do_get("/hello").await?.print().await?;
+
+    let req_create_task = ht.do_post(
+        "/api/rpc",
+        json!({
+            "id": 1,
+            "method": "task.create",
+            "params": {
+                "data": {
+                    "title": "test_create_ok title"
+                }
+            }
+        }),
+    );
+    req_create_task.await?.print().await?;
+
+    let req_update_task = ht.do_post(
+        "/api/rpc",
+        json!({
+            "id": 1,
+            "method": "task.update",
+            "params": {
+                "id": 1000,
+                "data": {
+                    "title": "test_create_ok title updated"
+                }
+            }
+        }),
+    );
+    req_update_task.await?.print().await?;
+
+    let req_delete_task = ht.do_post(
+        "/api/rpc",
+        json!({
+            "id": 1,
+            "method": "task.delete",
+            "params": {
+                "id": 1001
+            }
+        }),
+    );
+    req_delete_task.await?.print().await?;
+
+    let req_list_tasks = ht.do_post(
+        "/api/rpc",
+        json!({
+            "id": 1,
+            "method": "task.list",
+        }),
+    );
+    req_list_tasks.await?.print().await?;
 
     let req_logoff = ht.do_post(
         "/api/logoff",
@@ -30,9 +80,8 @@ async fn main() -> Result<()> {
             "logoff": true
         }),
     );
-    req_logoff.await?.print().await?;
+    // req_logoff.await?.print().await?;
 
     tracing::info!("Finished test 'test'");
-
     Ok(())
 }

@@ -18,7 +18,7 @@ pub use config::load_config;
 use crate::model::ModelManager;
 use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
-use crate::web::{routes_login, routes_static};
+use crate::web::{routes_login, routes_static, rpc};
 
 use axum::response::Html;
 use axum::routing::get;
@@ -45,20 +45,22 @@ async fn main() -> Result<()> {
     let mm = ModelManager::new().await?;
 
     // Initialize the new Router with the Hello Routes
-    let routes_hello = Router::new()
-        // Http and DB operations should be async
-        .route("/hello", get(|| async { Html("Hello World") }))
-        // Check ctx and token
-        .route_layer(middleware::from_fn(mw_require_auth));
+    // let routes_hello = Router::new()
+    //     // Http and DB operations should be async
+    //     .route("/hello", get(|| async { Html("Hello World") }))
+    //     // Check ctx and token
+    //     .route_layer(middleware::from_fn(mw_require_auth));
+
+    let routes_rpc = rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
 
     // Initialize the Router with all the routes
     let routes_all = Router::new()
         // Merge the Login Routes
         .merge(routes_login::routes(mm.clone()))
         // Merge the Hello Routes
-        .merge(routes_hello)
+        // .merge(routes_hello)
         // Nest the API Routes under the /api path
-        // .nest("/api", routes_apis)
+        .nest("/api", routes_rpc)
         // Add a middleware to map the all responses
         .layer(middleware::map_response(main_response_mapper))
         // Add a middleware to resolve the context

@@ -88,7 +88,7 @@ async fn api_logoff_handler(
 
     let should_logoff = payload.logoff;
     if should_logoff {
-        remove_token_cookie(&cookies);
+        let _ = remove_token_cookie(&cookies);
     }
 
     let body = Json(json!({
