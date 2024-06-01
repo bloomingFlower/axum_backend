@@ -30,14 +30,14 @@ pub async fn main_response_mapper(
         .map(|(status_code, client_error)| {
             let client_error = to_value(client_error).ok();
             let message = client_error.as_ref().and_then(|v| v.get("message"));
-            let details = client_error.as_ref().and_then(|v| v.get("details"));
+            let details = client_error.as_ref().and_then(|v| v.get("detail"));
 
             let client_error_body = json!({
                 "error": {
                     "message": message,
                     "data": {
                         "req_uuid": uuid.to_string(),
-                        "details": details,
+                        "detail": details,
                     }
                 }
             });
