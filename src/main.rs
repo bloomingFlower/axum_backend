@@ -20,8 +20,6 @@ use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
 use crate::web::{routes_login, routes_static, rpc};
 
-use axum::response::Html;
-use axum::routing::get;
 use axum::{middleware, Router};
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;

@@ -9,7 +9,7 @@ use axum::Json;
 use axum::Router;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tower_cookies::{Cookie, Cookies};
+use tower_cookies::Cookies;
 use tracing::debug;
 
 /// Create the Login Routes and return the Router

@@ -2,8 +2,10 @@ use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::base::{self, DbBmc};
 use crate::model::{ModelManager, Result};
+use modql::field::{Fields, HasFields};
+use sea_query::{Expr, Iden, PostgresQueryBuilder, SimpleExpr};
+use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
-use sqlb::{Fields, HasFields};
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -55,6 +57,13 @@ impl UserBy for User {}
 impl UserBy for UserForLogin {}
 impl UserBy for UserForAuth {}
 
+#[derive(Iden)]
+enum UserIden {
+    Id,
+    Username,
+    Password,
+}
+
 pub struct UserBmc;
 
 impl DbBmc for UserBmc {
@@ -80,10 +89,17 @@ impl UserBmc {
     {
         let db = mm.db();
 
-        let user = sqlb::select()
-            .table(Self::TABLE)
-            .and_where("username", "=", username)
-            .fetch_optional::<_, E>(db)
+        // Build the SQL query
+        let mut query = sea_query::Query::select();
+        query
+            .from(Self::table_ref())
+            .columns(E::field_idens())
+            .and_where(Expr::col(UserIden::Username).eq(username));
+
+        // Execute the query
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let user = sqlx::query_as_with::<_, E, _>(&sql, values)
+            .fetch_optional(db)
             .await?;
 
         Ok(user)
@@ -98,12 +114,19 @@ impl UserBmc {
             content: pwd_clear.to_string(),
         })?;
 
-        sqlb::update()
-            .table(Self::TABLE)
-            .and_where("id", "=", id)
-            .data(vec![("password", pwd_enc.to_string()).into()])
-            .exec(db)
-            .await?;
+        // Build the SQL query
+        let mut query = sea_query::Query::update();
+        query
+            .table(Self::table_ref())
+            .value(UserIden::Password, SimpleExpr::from(pwd_enc))
+            .and_where(Expr::col(UserIden::Id).eq(id));
+
+        // Execute the query
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let _count = sqlx::query_with(&sql, values)
+            .execute(db)
+            .await?
+            .rows_affected();
 
         Ok(())
     }

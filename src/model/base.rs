@@ -2,12 +2,24 @@ use crate::ctx::Ctx;
 use crate::model::error::Error;
 use crate::model::ModelManager;
 use crate::model::Result;
-use sqlb::HasFields;
+use modql::field::HasFields;
+use modql::SIden;
+use sea_query::{Expr, Iden, IntoIden, PostgresQueryBuilder, Query, TableRef};
+use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 
+#[derive(Iden)]
+pub enum CommonIden {
+    Id,
+}
+
 pub trait DbBmc {
     const TABLE: &'static str;
+
+    fn table_ref() -> TableRef {
+        TableRef::Table(SIden(Self::TABLE).into_iden())
+    }
 }
 
 pub async fn create<M, E>(_ctx: &Ctx, mm: &ModelManager, data: E) -> Result<i64>
@@ -17,12 +29,22 @@ where
 {
     let db = mm.db();
 
+    // Extract the fields and values
     let fields = data.not_none_fields();
-    let (id,) = sqlb::insert()
-        .table(M::TABLE)
-        .data(fields)
-        .returning(&["id"])
-        .fetch_one::<_, (i64,)>(db)
+    let (columns, sea_values) = fields.for_sea_insert();
+
+    // Build the SQL query
+    let mut query = Query::insert();
+    query
+        .into_table(M::table_ref())
+        .columns(columns)
+        .values(sea_values)?
+        .returning(Query::returning().columns([CommonIden::Id]));
+
+    // Execute the query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let (id,) = sqlx::query_as_with::<_, (i64,), _>(&sql, values)
+        .fetch_one(db)
         .await?;
 
     Ok(id)
@@ -36,11 +58,16 @@ where
 {
     let db = mm.db();
 
-    //let sql = format!("SELECT * FROM {} WHERE id = $1", M::TABLE); // for sqlx
-    let entity: E = sqlb::select()
-        .table(M::TABLE)
-        .columns(E::field_names())
-        .and_where("id", "=", id)
+    // Build the SQL query
+    let mut query = Query::select();
+    query
+        .from(M::table_ref())
+        .columns(E::field_column_refs())
+        .and_where(Expr::col(CommonIden::Id).eq(id));
+
+    // Execute the query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let entity = sqlx::query_as_with::<_, E, _>(&sql, values)
         .fetch_optional(db)
         .await?
         .ok_or(Error::EntityNotFound {
@@ -59,10 +86,13 @@ where
 {
     let db = mm.db();
 
-    let entities: Vec<E> = sqlb::select()
-        .table(M::TABLE)
-        .columns(E::field_names())
-        .order_by("id")
+    // Build the SQL query
+    let mut query = Query::select();
+    query.from(M::table_ref()).columns(E::field_column_refs());
+
+    // Execute the query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let entities = sqlx::query_as_with::<_, E, _>(&sql, values)
         .fetch_all(db)
         .await?;
 
@@ -76,14 +106,25 @@ where
 {
     let db = mm.db();
 
+    // Prepare the fields and values
     let fields = data.not_none_fields();
-    let count = sqlb::update()
-        .table(M::TABLE)
-        .and_where("id", "=", id)
-        .data(fields)
-        .exec(db)
-        .await?;
+    let fields = fields.for_sea_update();
 
+    // Build the SQL query
+    let mut query = Query::update();
+    query
+        .table(M::table_ref())
+        .values(fields)
+        .and_where(Expr::col(CommonIden::Id).eq(id));
+
+    // Execute the query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let count = sqlx::query_with(&sql, values)
+        .execute(db)
+        .await?
+        .rows_affected();
+
+    // Check if the entity was updated
     if count == 0 {
         Err(Error::EntityNotFound {
             entity: M::TABLE,
@@ -100,12 +141,20 @@ where
 {
     let db = mm.db();
 
-    let count = sqlb::delete()
-        .table(M::TABLE)
-        .and_where("id", "=", id)
-        .exec(db)
-        .await?;
+    // Build the SQL query
+    let mut query = Query::delete();
+    query
+        .from_table(M::table_ref())
+        .and_where(Expr::col(CommonIden::Id).eq(id));
 
+    // Execute the query
+    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+    let count = sqlx::query_with(&sql, values)
+        .execute(db)
+        .await?
+        .rows_affected();
+
+    // Check if the entity was deleted
     if count == 0 {
         Err(Error::EntityNotFound {
             entity: M::TABLE,

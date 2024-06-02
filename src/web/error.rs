@@ -1,52 +1,52 @@
 use crate::{crypt, model, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use derive_more::From;
 use serde::Serialize;
+use serde_with::{serde_as, DisplayFromStr};
+use std::sync::Arc;
 use tracing::debug;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize, strum_macros::AsRefStr, Clone)]
+#[serde_as]
+#[derive(Debug, Serialize, strum_macros::AsRefStr, From, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Login
     LoginFail,
     LoginFailUsernameNotFound,
-    LoginFailUserHasNoPwd { user_id: i64 },
-    LoginFailPwdNotMatching { user_id: i64 },
+    LoginFailUserHasNoPwd {
+        user_id: i64,
+    },
+    LoginFailPwdNotMatching {
+        user_id: i64,
+    },
 
     // -- CtxExtError
+    #[from]
     CtxExt(web::mw_auth::CtxExtError),
 
     // -- Modules
+    #[from]
     Model(model::Error),
+    #[from]
     Crypt(crypt::Error),
 
     // RPC
     RpcMethodUnknown(String),
-    RpcMissingParams { rpc_method: String },
-    RpcFailJsonParams { rpc_method: String },
+    RpcMissingParams {
+        rpc_method: String,
+    },
+    RpcFailJsonParams {
+        rpc_method: String,
+    },
 
     // External Modules
-    SerdeJson(String),
-}
-
-impl From<model::Error> for Error {
-    fn from(val: model::Error) -> Self {
-        Error::Model(val)
-    }
-}
-
-impl From<crypt::Error> for Error {
-    fn from(val: crypt::Error) -> Self {
-        Self::Crypt(val)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(val: serde_json::Error) -> Self {
-        Self::SerdeJson(val.to_string())
-    }
+    #[from]
+    SerdeJson(#[serde_as(as = "DisplayFromStr")] Arc<serde_json::Error>),
+    #[from]
+    SeaQuery(#[serde_as(as = "DisplayFromStr")] Arc<sea_query::error::Error>),
 }
 
 // region:    --- Axum IntoResponse

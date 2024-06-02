@@ -32,13 +32,15 @@ strum_macros = "0.26.2"
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
 # sqlx is a database driver for Rust
-sqlx = { version = "0.6.3", features = [
+sqlx = { version = "0.7.4", features = [
     "runtime-tokio-rustls",
     "postgres",
     "uuid",
     "time",
 ] }
-sqlb = "0.3.8" # Optional
+sea-query = "0.30.7"
+sea-query-binder = {  version = "0.5.0", features = ["sqlx-postgres", "with-uuid"] }
+modql = { version = "0.3.4", features = ["with-sea-query"]}
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
@@ -48,6 +50,7 @@ hmac = "0.12.1"
 sha2 = "0.10.8"
 base64-url = "3.0.0"
 time = "0.3.36"
+derive_more = { version = "0.99.1", features = ["from"] }
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

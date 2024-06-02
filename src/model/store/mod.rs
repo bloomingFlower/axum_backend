@@ -12,8 +12,10 @@ pub type Db = Pool<Postgres>;
 
 /// Create a new database pool
 pub async fn new_db_pool() -> Result<Db> {
+    let max_connections = if cfg!(test) { 1 } else { 5 };
+
     PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(max_connections)
         .acquire_timeout(Duration::from_millis(500))
         .connect(&config::load_config().DB_URL)
         .await

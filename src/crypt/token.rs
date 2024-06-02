@@ -5,6 +5,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Token {
     pub identifier: String, // The identifier of the token
     pub exp: String,        // The expiration date of the token
