@@ -10,14 +10,14 @@ repository = "https://github.com/bloomingFlower/axum_backend"
 
 [dependencies]
 # Tokio is an asynchronous runtime for Rust
-tokio = { version = "1.37.0", features = ["full"] }
+tokio = { version = "1.38.0", features = ["full"] }
 # Axum is a web framework based on hyper, the Rust HTTP library
 axum = { version = "0.7.5" }
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
 # Serde is a serialization/deserialization library for Rust
-serde = { version = "1.0.198", features = ["derive"] }
-serde_json = "1.0.80"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
 # Tower is a library of modular and reusable components for building robust networking clients and servers
 tower = "0.4.13"
 tower-http = { version = "0.5.2", features = ["fs"] }
@@ -27,7 +27,7 @@ lazy-regex = "3.1.0"
 # async-trait is a library for defining async functions that return a Future
 async-trait = "0.1.80"
 # strum_macros is a library for deriving enums from strings
-strum_macros = "0.26.2"
+strum_macros = "0.26.3"
 # uuid is a library for generating UUIDs(version 4 means random UUIDs)
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
@@ -50,7 +50,7 @@ hmac = "0.12.1"
 sha2 = "0.10.8"
 base64-url = "3.0.0"
 time = "0.3.36"
-derive_more = { version = "0.99.1", features = ["from"] }
+derive_more = { version = "1.0.0-beta", features = ["from"] }
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

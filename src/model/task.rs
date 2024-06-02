@@ -64,6 +64,7 @@ impl TaskBmc {
 mod tests {
     use super::*;
     use crate::_dev_utils;
+    use crate::model::Error;
     use anyhow::Result;
     use serial_test::serial;
 

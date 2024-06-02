@@ -132,7 +132,7 @@ mod tests {
         };
 
         let token: Token = fx_toekn_str.parse()?;
-        assert_eq!(format!("{:?}", token), format!("{:?}", fx_token));
+        assert_eq!(token, fx_token);
 
         Ok(())
     }

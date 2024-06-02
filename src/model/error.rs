@@ -24,8 +24,6 @@ pub enum Error {
     #[from]
     Sqlx(#[serde_as(as = "DisplayFromStr")] Arc<sqlx::Error>),
     #[from]
-    SerdeJson(#[serde_as(as = "DisplayFromStr")] Arc<serde_json::Error>),
-    #[from]
     SeaQuery(#[serde_as(as = "DisplayFromStr")] Arc<sea_query::error::Error>),
 }
 

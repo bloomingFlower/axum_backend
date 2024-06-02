@@ -38,10 +38,23 @@ ALTER DATABASE postgres SET log_statement = 'all';
 ## Future Work
 ### Database
 - [ ] ORM (sqlb > sea-query)
-### Porotocols
+### Protocols
 - [x] REST
 - [x] JSON-RPC
 - [ ] GraphQL
 - [ ] gRPC
 - [ ] WebSockets
 
+### Prod Code
+- apps
+- libs
+- modules
+
+### Test Code
+- examples
+- tests
+
+### Don't use
+- context(..)
+- expect(..)
+- unwrap()
