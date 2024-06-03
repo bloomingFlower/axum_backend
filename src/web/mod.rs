@@ -7,14 +7,15 @@ pub mod rpc;
 
 pub use self::error::ClientError;
 pub use self::error::{Error, Result};
-use crate::crypt::token::generate_web_token;
+use crate::token::generate_web_token;
 use tower_cookies::{Cookie, Cookies};
+use uuid::Uuid;
 
 /// The name of the authentication token cookie
 pub const AUTH_TOKEN: &str = "auth-token";
 
 /// Set the token cookie
-fn set_token_cookie(cookies: &Cookies, user: &str, salt: &str) -> Result<()> {
+fn set_token_cookie(cookies: &Cookies, user: &str, salt: Uuid) -> Result<()> {
     // Generate the web token
     let token = generate_web_token(user, salt)?;
 

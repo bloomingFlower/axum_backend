@@ -1,5 +1,5 @@
-use crate::crypt;
 use crate::model::store;
+use crate::pwd;
 use derive_more::From;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -16,7 +16,7 @@ pub enum Error {
     },
     // -- Modules
     #[from]
-    Crypt(crypt::Error),
+    Pwd(pwd::Error),
     #[from]
     Store(store::Error),
 

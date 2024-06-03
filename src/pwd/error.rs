@@ -4,19 +4,10 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Serialize, Clone)]
 pub enum Error {
-    // Key
-    KeyFailHmac,
+    KeyFail,
 
     // Pwd
-    PwdNotMatching,
-
-    // Token
-    TokenInvalidFormat,
-    TokenCannotDecodeIdent,
-    TokenCannotDecodeExp,
-    TokenSignatureNotMatching,
-    TokenExpNotIso,
-    TokenExpired,
+    NotMatching,
 }
 
 impl core::fmt::Display for Error {

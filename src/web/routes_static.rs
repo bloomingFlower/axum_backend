@@ -1,4 +1,4 @@
-use crate::load_config;
+use crate::config::load_config;
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
 use axum::routing::{any_service, MethodRouter};

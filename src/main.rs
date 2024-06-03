@@ -1,10 +1,11 @@
 /// Import the necessary modules
 mod config;
-mod crypt;
 mod ctx;
 mod error;
 mod log;
 mod model;
+mod pwd;
+mod token;
 mod utils;
 mod web;
 // #[cfg(test)] // Commented during the early development
@@ -12,7 +13,6 @@ mod _dev_utils;
 
 /// Export the Error and Result types
 pub use self::error::{Error, Result};
-pub use config::load_config;
 
 /// Import the necessary modules
 use crate::model::ModelManager;

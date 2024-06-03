@@ -1,4 +1,7 @@
+mod params;
 mod task_rpc;
+
+use params::*;
 
 use crate::ctx::Ctx;
 use crate::model::ModelManager;
@@ -11,6 +14,20 @@ use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{from_value, json, to_value, Value};
 use tracing::debug;
+
+/// JSON-RPC 2.0 Request
+#[derive(Deserialize)]
+struct RpcRequest {
+    id: Option<Value>,
+    method: String,
+    params: Option<Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RpcInfo {
+    pub id: Option<Value>,
+    pub method: String,
+}
 
 pub fn routes(mm: ModelManager) -> Router {
     Router::new()
@@ -32,12 +49,6 @@ async fn rpc_handler(
     res.extensions_mut().insert(rpc_info);
 
     res
-}
-
-#[derive(Debug, Clone)]
-pub struct RpcInfo {
-    pub id: Option<Value>,
-    pub method: String,
 }
 
 macro_rules! exec_rpc_fn {
@@ -84,28 +95,4 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
     debug!("{:<12} - _rpc_handler - method: {rpc_method}", "HANDLER");
 
     Ok(Json(body_response))
-}
-
-/// JSON-RPC 2.0 Request
-#[derive(Deserialize)]
-struct RpcRequest {
-    id: Option<Value>,
-    method: String,
-    params: Option<Value>,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsForCreate<D> {
-    data: D,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsForUpdate<D> {
-    id: i64,
-    data: D,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsIded {
-    id: i64,
 }

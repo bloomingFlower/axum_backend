@@ -1,16 +1,19 @@
-use crate::model;
-use derive_more::From;
+use serde::Serialize;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, From)]
+#[derive(Debug, Serialize, Clone)]
 pub enum Error {
-    // -- Modules
-    #[from]
-    Model(model::Error),
+    HmacFailNewFromSlice,
+
+    InvalidFormat,
+    CannotDecodeIdent,
+    CannotDecodeExp,
+    SignatureNotMatching,
+    ExpNotIso,
+    Expired,
 }
 
-// region:    --- Error Boilerplate
 impl core::fmt::Display for Error {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
@@ -18,4 +21,3 @@ impl core::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-// endregion: --- Error Boilerplate

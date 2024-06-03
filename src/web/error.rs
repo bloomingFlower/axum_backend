@@ -1,4 +1,4 @@
-use crate::{crypt, model, web};
+use crate::{model, pwd, token, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
@@ -31,7 +31,9 @@ pub enum Error {
     #[from]
     Model(model::Error),
     #[from]
-    Crypt(crypt::Error),
+    Pwd(pwd::Error),
+    #[from]
+    Token(token::Error),
 
     // RPC
     RpcMethodUnknown(String),

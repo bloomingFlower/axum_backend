@@ -1,7 +1,7 @@
-use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::user::{UserBmc, UserForLogin};
 use crate::model::ModelManager;
+use crate::pwd::{self, ContentToHash};
 use crate::web::{self, remove_token_cookie, Error, Result};
 use axum::extract::State;
 use axum::routing::post;
@@ -18,8 +18,7 @@ pub fn routes(mm: ModelManager) -> Router {
     Router::new()
         .route("/api/login", post(api_login_handler))
         .route("/api/logoff", post(api_logoff_handler))
-        // mm is passed to the State that can be accessed in the handler with State(ModelManager)
-        .with_state(mm)
+        .with_state(mm) // mm is passed to the State that can be accessed in the handler with State(ModelManager)
 }
 
 // region:    --- Login
@@ -49,8 +48,8 @@ async fn api_login_handler(
     };
 
     pwd::validate_pwd(
-        &EncryptContent {
-            salt: user.password_salt.to_string(),
+        &ContentToHash {
+            salt: user.password_salt,
             content: pwd_clear.clone(),
         },
         &pwd,
@@ -58,7 +57,7 @@ async fn api_login_handler(
     .map_err(|_| Error::LoginFailPwdNotMatching { user_id })?;
 
     // Set the token cookie
-    web::set_token_cookie(&cookies, &user.username, &user.token_salt.to_string())?;
+    web::set_token_cookie(&cookies, &user.username, user.token_salt)?;
 
     // Create the response body
     let body = Json(json!({

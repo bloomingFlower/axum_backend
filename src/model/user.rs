@@ -1,7 +1,7 @@
-use crate::crypt::{pwd, EncryptContent};
 use crate::ctx::Ctx;
 use crate::model::base::{self, DbBmc};
 use crate::model::{ModelManager, Result};
+use crate::pwd::{self, ContentToHash};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, SimpleExpr};
 use sea_query_binder::SqlxBinder;
@@ -34,7 +34,7 @@ pub struct UserForInsert {
 pub struct UserForLogin {
     pub id: i64,
     pub username: String,
-    pub password: Option<String>,
+    pub password: Option<String>, // hashed
     pub password_salt: Uuid,
     pub token_salt: Uuid,
 }
@@ -109,9 +109,9 @@ impl UserBmc {
         let db = mm.db();
 
         let user: UserForLogin = Self::get(ctx, mm, id).await?;
-        let pwd_enc = pwd::encrypt_pwd(&EncryptContent {
-            salt: user.password_salt.to_string(),
+        let pwd_enc = pwd::hash_pwd(&ContentToHash {
             content: pwd_clear.to_string(),
+            salt: user.password_salt,
         })?;
 
         // Build the SQL query
