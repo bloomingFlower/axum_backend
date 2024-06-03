@@ -3,6 +3,7 @@ use crate::model::error::Error;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::HasFields;
+use modql::filter::{FilterGroup, FilterGroups, ListOptions};
 use modql::SIden;
 use sea_query::{Expr, Iden, IntoIden, PostgresQueryBuilder, Query, TableRef};
 use sea_query_binder::SqlxBinder;
@@ -78,9 +79,15 @@ where
     Ok(entity)
 }
 
-pub async fn list<M, E>(_ctx: &Ctx, mm: &ModelManager) -> Result<Vec<E>>
+pub async fn list<M, E, F>(
+    _ctx: &Ctx,
+    mm: &ModelManager,
+    filter: Option<F>,
+    list_options: Option<ListOptions>,
+) -> Result<Vec<E>>
 where
     M: DbBmc,
+    F: Into<FilterGroups>,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
     E: HasFields,
 {
@@ -89,6 +96,18 @@ where
     // Build the SQL query
     let mut query = Query::select();
     query.from(M::table_ref()).columns(E::field_column_refs());
+
+    // condition from filter
+    if let Some(filter) = filter {
+        let filters: FilterGroups = filter.into();
+        let cond = filters.try_into()?;
+        query.cond_where(cond);
+    }
+
+    // list options
+    if let Some(list_options) = list_options {
+        list_options.apply_to_sea_query(&mut query);
+    }
 
     // Execute the query
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);

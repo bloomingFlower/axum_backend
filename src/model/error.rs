@@ -25,6 +25,8 @@ pub enum Error {
     Sqlx(#[serde_as(as = "DisplayFromStr")] Arc<sqlx::Error>),
     #[from]
     SeaQuery(#[serde_as(as = "DisplayFromStr")] Arc<sea_query::error::Error>),
+    #[from]
+    ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] Arc<modql::filter::IntoSeaError>),
 }
 
 // region:    --- Error Boilerplate
