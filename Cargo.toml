@@ -2,7 +2,7 @@
 name = "axum_backend"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.71.0"
+rust-version = "1.78.0"
 description = "A backend for the Axum web framework"
 repository = "https://github.com/bloomingFlower/axum_backend"
 
@@ -48,7 +48,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 rand = "0.8.5"
 hmac = "0.12.1"
 sha2 = "0.10.8"
-base64-url = "3.0.0"
+base64 = "0.22.1"
 time = "0.3.36"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
 

@@ -4,6 +4,7 @@ pub mod token;
 
 pub use self::error::{Error, Result};
 
+use crate::utils::b64u_encode;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
@@ -20,8 +21,7 @@ pub fn encrypt_into_b64u(key: &[u8], enc_content: &EncryptContent) -> Result<Str
     hmac_sha256.update(salt.as_bytes());
 
     let hmac_result = hmac_sha256.finalize();
-    let result_bytes = hmac_result.into_bytes();
-    let result = base64_url::encode(&result_bytes);
+    let result = b64u_encode(hmac_result.into_bytes());
 
     Ok(result)
 }

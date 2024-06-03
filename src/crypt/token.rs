@@ -1,6 +1,6 @@
 use crate::crypt::{encrypt_into_b64u, EncryptContent, Error, Result};
 use crate::load_config;
-use crate::utils::{b64u_decode, b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc};
+use crate::utils::{b64u_decode_to_string, b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc};
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -23,8 +23,9 @@ impl FromStr for Token {
         let (ident_b64u, exp_b64u, sign_b64u) = (splits[0], splits[1], splits[2]);
 
         Ok(Self {
-            identifier: b64u_decode(ident_b64u).map_err(|_| Error::TokenCannotDecodeIdent)?,
-            exp: b64u_decode(exp_b64u).map_err(|_| Error::TokenCannotDecodeExp)?,
+            identifier: b64u_decode_to_string(ident_b64u)
+                .map_err(|_| Error::TokenCannotDecodeIdent)?,
+            exp: b64u_decode_to_string(exp_b64u).map_err(|_| Error::TokenCannotDecodeExp)?,
             sign_b64u: sign_b64u.to_string(),
         })
     }
