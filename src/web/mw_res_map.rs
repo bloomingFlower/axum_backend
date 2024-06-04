@@ -25,7 +25,7 @@ pub async fn main_response_mapper(
     let web_error = res.extensions().get::<web::Error>();
     let client_status_error = web_error.map(|se| se.client_status_and_error());
 
-    // -- If client error, build the new reponse.
+    // -- If client error, build the new response.
     let error_response = client_status_error
         .as_ref() // as_ref is used to avoid moving client_status_error(Option type)
         .map(|(status_code, client_error)| {
@@ -51,7 +51,7 @@ pub async fn main_response_mapper(
 
     // -- Build and log the server log line.
     let client_error = client_status_error.unzip().1;
-    // TODO: Need to hander if log_request fail (but should not fail request)
+    // TODO: Need to handler if log_request fail (but should not fail request)
     let _ = log_request(
         uuid,
         req_method,
