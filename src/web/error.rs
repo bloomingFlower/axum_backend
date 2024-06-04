@@ -1,3 +1,6 @@
+//! Web Module 에러를 핸들링하는 모듈입니다.
+//! serde_as 를 사용하여 DisplayFromStr 을 사용합니다.
+
 use crate::{model, pwd, token, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -5,12 +8,17 @@ use derive_more::From;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use std::sync::Arc;
+use strum_macros::AsRefStr;
 use tracing::debug;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// Error Type
+// Custom Serialize and Deserialize for the Error type.
 #[serde_as]
-#[derive(Debug, Serialize, strum_macros::AsRefStr, From, Clone)]
+// AsRefStr is used to convert the Error into a string.
+#[derive(Debug, Serialize, AsRefStr, From, Clone)]
+// Serialize the Error as a JSON object with a "type" field and a "data" field.
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Login
@@ -35,7 +43,7 @@ pub enum Error {
     #[from]
     Token(token::Error),
 
-    // RPC
+    // -- RPC
     RpcMethodUnknown(String),
     RpcMissingParams {
         rpc_method: String,
@@ -44,7 +52,7 @@ pub enum Error {
         rpc_method: String,
     },
 
-    // External Modules
+    // -- External Modules
     #[from]
     SerdeJson(#[serde_as(as = "DisplayFromStr")] Arc<serde_json::Error>),
 }
@@ -54,7 +62,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         debug!("{:<12} - model::Error {self:?}", "INTO_RES");
 
-        // Create a placeholder Axum response.
+        // Create a placeholder Axum response.(500 Internal Server Error)
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
         // Insert the Error into the response.
@@ -65,7 +73,6 @@ impl IntoResponse for Error {
 }
 // endregion: --- Axum IntoResponse
 
-// region:    --- Error Boilerplate
 impl core::fmt::Display for Error {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
@@ -73,7 +80,6 @@ impl core::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-// endregion: --- Error Boilerplate
 
 // region:    --- Client Error
 
@@ -107,13 +113,14 @@ impl Error {
     }
 }
 
-#[derive(Debug, Serialize, strum_macros::AsRefStr)]
+#[derive(Debug, Serialize, AsRefStr)]
 #[serde(tag = "message", content = "detail")]
-// Personal Preference
+// Personal Preference(Distinguish between the error types in the client error)
 #[allow(non_camel_case_types)]
 pub enum ClientError {
     LOGIN_FAIL,
     NO_AUTH,
+    // About static
     ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
 
     SERVICE_ERROR,

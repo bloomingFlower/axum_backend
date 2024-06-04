@@ -57,7 +57,7 @@ async fn _ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExtResul
     // Get UserForAuth
     let user: UserForAuth = UserBmc::first_by_username(&Ctx::root_ctx(), &mm, &token.identifier)
         .await
-        .map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
+        .map_err(|e| CtxExtError::ModelAccessError(e.to_string()))?
         .ok_or(CtxExtError::UserNotFound)?;
 
     // Validate Token
@@ -72,8 +72,13 @@ async fn _ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExtResul
 }
 
 // region:    --- Ctx Extractor
+// async_trait is used to define async trait that can be used in async functions
 #[async_trait]
+// This trait is used to extract the Ctx from the request parts which satisfies the S that Send and Sync constraints
+// Send is used to move the ownership of the value to another thread
+// Sync is used to safely share the value between threads
 impl<S: Send + Sync> FromRequestParts<S> for Ctx {
+    // Rejection is used to define the error type that can be returned by the from_request_parts function
     type Rejection = Error;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {

@@ -35,6 +35,7 @@ async fn api_login_handler(
         // password is the clear text password
         password: pwd_clear,
     } = payload;
+    
     let root_ctx = Ctx::root_ctx();
 
     let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &mm, &username)

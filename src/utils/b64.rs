@@ -1,6 +1,8 @@
 use base64::engine::{general_purpose, Engine};
 
+// impl AsRef<[u8]> is a trait that is used to convert a value to a slice of bytes.
 pub fn b64u_encode(content: impl AsRef<[u8]>) -> String {
+    // URL safe and no padding encoding
     general_purpose::URL_SAFE_NO_PAD.encode(content)
 }
 
@@ -19,6 +21,7 @@ pub fn b64u_decode_to_string(b64u: &str) -> Result<String> {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+// About Error
 #[derive(Debug)]
 pub enum Error {
     FailToB64uDecode,

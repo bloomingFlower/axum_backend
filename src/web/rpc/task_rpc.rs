@@ -4,6 +4,7 @@ use crate::model::ModelManager;
 use crate::web::rpc::{ParamsForCreate, ParamsForUpdate, ParamsIded};
 use crate::web::Result;
 
+/// Create a task with the given data
 pub async fn create_task(
     ctx: Ctx,
     mm: ModelManager,
@@ -17,11 +18,13 @@ pub async fn create_task(
     Ok(task)
 }
 
+/// List all tasks
 pub async fn list_tasks(ctx: Ctx, mm: ModelManager) -> Result<Vec<Task>> {
     let tasks = TaskBmc::list(&ctx, &mm, None, None).await?;
     Ok(tasks)
 }
 
+/// Update a task with the given data
 pub async fn update_task(
     ctx: Ctx,
     mm: ModelManager,
@@ -36,6 +39,7 @@ pub async fn update_task(
     Ok(task)
 }
 
+/// Delete a task with the given id
 pub async fn delete_task(ctx: Ctx, mm: ModelManager, params: ParamsIded) -> Result<Task> {
     let ParamsIded { id } = params;
     let task = TaskBmc::get(&ctx, &mm, id).await?;

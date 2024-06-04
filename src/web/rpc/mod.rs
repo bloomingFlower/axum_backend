@@ -23,18 +23,21 @@ struct RpcRequest {
     params: Option<Value>,
 }
 
+/// JSON-RPC 2.0 INFO
 #[derive(Debug, Clone)]
 pub struct RpcInfo {
     pub id: Option<Value>,
     pub method: String,
 }
 
+/// Routes for JSON-RPC 2.0
 pub fn routes(mm: ModelManager) -> Router {
     Router::new()
         .route("/rpc", post(rpc_handler))
         .with_state(mm)
 }
 
+/// JSON-RPC 2.0 Handler
 async fn rpc_handler(
     State(mm): State<ModelManager>,
     ctx: Ctx,
@@ -51,6 +54,7 @@ async fn rpc_handler(
     res
 }
 
+/// Define the macro to execute the RPC function
 macro_rules! exec_rpc_fn {
     // With Params
     ($rpc_fn:expr, $ctx:expr, $mm:expr, $rpc_params:expr) => {{
@@ -70,6 +74,7 @@ macro_rules! exec_rpc_fn {
     };
 }
 
+/// RPC Handler
 async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result<Json<Value>> {
     let RpcRequest {
         id: rpc_id,

@@ -12,6 +12,8 @@ use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Debug)]
+// In test, derive(PartialEq) is used to compare the Token struct
+// PartialEq is a trait that is used to compare the values of two types.
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Token {
     pub identifier: String, // The identifier of the token
@@ -96,13 +98,17 @@ fn _validate_token_sign_and_exp(origin_token: &Token, salt: Uuid, key: &[u8]) ->
 // Create a token from the identifier, expiration date and salt.
 fn _token_sign_into_b64u(identifier: &str, exp: &str, salt: Uuid, key: &[u8]) -> Result<String> {
     let content = format!("{}.{}", b64u_encode(identifier), b64u_encode(exp));
-
+    // Hmac is a struct that represents the HMAC algorithm.
+    // b64u encode is not encryption process, it is encoding process.
+    // Intialize the Hmac struct with the SHA-512 algorithm and the key.
     let mut hmac_sha512 =
         Hmac::<Sha512>::new_from_slice(key).map_err(|_| Error::HmacFailNewFromSlice)?;
 
+    // Add the content and the salt data to the HMAC algorithm.
     hmac_sha512.update(content.as_bytes());
     hmac_sha512.update(salt.as_bytes());
 
+    // Finalize the HMAC algorithm and convert the result into bytes.
     let hmac_result = hmac_sha512.finalize().into_bytes();
     let result = b64u_encode(hmac_result);
 
@@ -114,7 +120,7 @@ fn _token_sign_into_b64u(identifier: &str, exp: &str, salt: Uuid, key: &[u8]) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::load_config;
+    use crate::config::load_config;
     use anyhow::Result;
     use std::thread;
 

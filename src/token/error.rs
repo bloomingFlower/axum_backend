@@ -10,7 +10,7 @@ pub enum Error {
     CannotDecodeIdent,
     CannotDecodeExp,
     SignatureNotMatching,
-    ExpNotIso,
+    ExpNotIso, // ISO 8601 format
     Expired,
 }
 

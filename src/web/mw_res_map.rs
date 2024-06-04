@@ -9,6 +9,7 @@ use serde_json::{json, to_value};
 use tracing::debug;
 use uuid::Uuid;
 
+/// Main response mapper
 pub async fn main_response_mapper(
     ctx: Option<Ctx>,
     uri: Uri,
@@ -26,7 +27,7 @@ pub async fn main_response_mapper(
 
     // -- If client error, build the new reponse.
     let error_response = client_status_error
-        .as_ref()
+        .as_ref() // as_ref is used to avoid moving client_status_error(Option type)
         .map(|(status_code, client_error)| {
             let client_error = to_value(client_error).ok();
             let message = client_error.as_ref().and_then(|v| v.get("message"));
@@ -64,5 +65,6 @@ pub async fn main_response_mapper(
 
     debug!("\n");
 
-    error_response.unwrap_or(res)
+    // unwrap_or_else is better than unwrap_or because it does not evaluate the default value if it is not needed.
+    error_response.unwrap_or_else(|| res)
 }
