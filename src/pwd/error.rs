@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+// Define the Result type for simplicity
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Serialize, Clone)]
