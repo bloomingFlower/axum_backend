@@ -26,6 +26,6 @@ where
     F: DeserializeOwned,
 {
     #[serde_as(deserialize_as = "Option<OneOrMany<_>>")]
-    filters: Option<Vec<F>>,
-    list_options: Option<ListOptions>,
+    pub filters: Option<Vec<F>>,
+    pub list_options: Option<ListOptions>,
 }
