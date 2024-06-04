@@ -52,10 +52,10 @@ impl TaskBmc {
     pub async fn list(
         ctx: &Ctx,
         mm: &ModelManager,
-        filter: Option<TaskFilter>,
+        filters: Option<Vec<TaskFilter>>,
         list_options: Option<ListOptions>,
     ) -> Result<Vec<Task>> {
-        base::list::<Self, _, _>(ctx, mm, filter, list_options).await
+        base::list::<Self, _, _>(ctx, mm, filters, list_options).await
     }
 
     pub async fn update(
@@ -176,7 +176,7 @@ mod tests {
         _dev_utils::seed_tasks(&ctx, &mm, fx_titles).await?;
 
         // -- Exec
-        let filter = serde_json::from_value(json!({
+        let filters = serde_json::from_value(json!({
             // "title": "test_list_by_filter_ok-task 01.%",
             "title": {
                 "$endsWith": ".a",
@@ -190,10 +190,13 @@ mod tests {
             "offset": 0,
             "order_bys": "!title",
         }))?;
-        let tasks = TaskBmc::list(&ctx, &mm, Some(filter), Some(list_options)).await?;
+        let tasks = TaskBmc::list(&ctx, &mm, Some(filters), Some(list_options)).await?;
 
         // -- Check
-        println!("--> tasks: {:#?}", tasks);
+        assert_eq!(tasks.len(), 3);
+        assert!(tasks[0].title.ends_with(".a"));
+        assert!(tasks[1].title.ends_with("01.a"));
+        assert!(tasks[2].title.ends_with("02.a"));
         // let tasks: Vec<Task> = tasks
         //     .into_iter()
         //     .filter(|t| t.title.starts_with("test_list_by_filter_ok-task"))
@@ -201,6 +204,20 @@ mod tests {
         // assert_eq!(tasks.len(), 2, "number of seeded tasks.");
 
         // -- Clean
+        let tasks: Vec<Task> = TaskBmc::list(
+            &ctx,
+            &mm,
+            Some(serde_json::from_value(json!({
+                "title": {
+                    "$startsWith": "test_list_by_filter_ok"
+                }
+            }))?),
+            None,
+        )
+        .await?;
+
+        assert_eq!(tasks.len(), 5, "number of seeded tasks.");
+
         for task in tasks.iter() {
             TaskBmc::delete(&ctx, &mm, task.id).await?;
         }

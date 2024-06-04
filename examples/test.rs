@@ -24,19 +24,23 @@ async fn main() -> Result<()> {
 
     // ht.do_get("/hello").await?.print().await?;
 
-    let req_create_task = ht.do_post(
-        "/api/rpc",
-        json!({
-            "id": 1,
-            "method": "task.create",
-            "params": {
-                "data": {
-                    "title": "test_create_ok title"
+    let mut task_ids: Vec<i64> = Vec::new();
+    for i in 0..=4 {
+        let req_create_task = ht.do_post(
+            "/api/rpc",
+            json!({
+                "id": 1,
+                "method": "task.create",
+                "params": {
+                    "data": {
+                        "title": format!("test_create_ok title {i}")
+                    }
                 }
-            }
-        }),
-    );
-    req_create_task.await?.print().await?;
+            }),
+        );
+        let result = req_create_task.await?;
+        task_ids.push(result.json_value::<i64>("/result/id")?);
+    }
 
     let req_update_task = ht.do_post(
         "/api/rpc",
@@ -44,7 +48,7 @@ async fn main() -> Result<()> {
             "id": 1,
             "method": "task.update",
             "params": {
-                "id": 1000,
+                "id": task_ids[0],
                 "data": {
                     "title": "test_create_ok title updated"
                 }
@@ -59,7 +63,7 @@ async fn main() -> Result<()> {
             "id": 1,
             "method": "task.delete",
             "params": {
-                "id": 1001
+                "id": task_ids[1]
             }
         }),
     );
@@ -70,6 +74,18 @@ async fn main() -> Result<()> {
         json!({
             "id": 1,
             "method": "task.list",
+            "params": {
+                "filters": [{
+                    "title": {
+                        "$startsWith": "test_create_ok"
+                    }
+                }, {
+                    "id": {"$in": [task_ids[2], task_ids[3]]}
+                }],
+                "list_options": {
+                    "order_bys": "!id"
+                }
+            }
         }),
     );
     req_list_tasks.await?.print().await?;

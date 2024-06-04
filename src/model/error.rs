@@ -14,6 +14,10 @@ pub enum Error {
         entity: &'static str,
         id: i64,
     },
+    ListLimitOverMax {
+        max: i64,
+        actual: i64,
+    },
     // -- Modules
     #[from]
     Pwd(pwd::Error),

@@ -3,12 +3,15 @@ use crate::model::error::Error;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::HasFields;
-use modql::filter::{FilterGroup, FilterGroups, ListOptions};
+use modql::filter::{FilterGroups, ListOptions};
 use modql::SIden;
 use sea_query::{Expr, Iden, IntoIden, PostgresQueryBuilder, Query, TableRef};
 use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
+
+const LIST_LIMIT_DEFAULT: i64 = 300;
+const LIST_LIMIT_MAX: i64 = 1000;
 
 #[derive(Iden)]
 pub enum CommonIden {
@@ -20,6 +23,28 @@ pub trait DbBmc {
 
     fn table_ref() -> TableRef {
         TableRef::Table(SIden(Self::TABLE).into_iden())
+    }
+}
+
+pub fn finalize_list_options(list_options: Option<ListOptions>) -> Result<ListOptions> {
+    if let Some(mut list_options) = list_options {
+        if let Some(limit) = list_options.limit {
+            if limit > LIST_LIMIT_MAX {
+                return Err(Error::ListLimitOverMax {
+                    max: LIST_LIMIT_MAX,
+                    actual: limit,
+                });
+            }
+        } else {
+            list_options.limit = Some(LIST_LIMIT_DEFAULT);
+        }
+        Ok(list_options)
+    } else {
+        Ok(ListOptions {
+            limit: Some(LIST_LIMIT_DEFAULT),
+            offset: None,
+            order_bys: Some("id".into()),
+        })
     }
 }
 
@@ -82,7 +107,7 @@ where
 pub async fn list<M, E, F>(
     _ctx: &Ctx,
     mm: &ModelManager,
-    filter: Option<F>,
+    filters: Option<F>,
     list_options: Option<ListOptions>,
 ) -> Result<Vec<E>>
 where
@@ -98,16 +123,15 @@ where
     query.from(M::table_ref()).columns(E::field_column_refs());
 
     // condition from filter
-    if let Some(filter) = filter {
+    if let Some(filter) = filters {
         let filters: FilterGroups = filter.into();
         let cond = filters.try_into()?;
         query.cond_where(cond);
     }
 
     // list options
-    if let Some(list_options) = list_options {
-        list_options.apply_to_sea_query(&mut query);
-    }
+    let list_options = finalize_list_options(list_options)?;
+    list_options.apply_to_sea_query(&mut query);
 
     // Execute the query
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);

@@ -84,7 +84,7 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
 
     let result_json = match rpc_method.as_str() {
         "task.create" => exec_rpc_fn!(create_task, ctx, mm, rpc_params),
-        "task.list" => exec_rpc_fn!(list_tasks, ctx, mm),
+        "task.list" => exec_rpc_fn!(list_tasks, ctx, mm, rpc_params),
         "task.update" => exec_rpc_fn!(update_task, ctx, mm, rpc_params),
         "task.delete" => exec_rpc_fn!(delete_task, ctx, mm, rpc_params),
         _ => {
