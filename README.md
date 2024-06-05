@@ -58,3 +58,6 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - context(..)
 - expect(..)
 - unwrap()
+
+### Refer
+- https://apihandyman.io/do-you-really-know-why-you-prefer-rest-over-rpc/#examples

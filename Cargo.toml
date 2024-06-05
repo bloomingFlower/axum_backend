@@ -47,6 +47,8 @@ sea-query-binder = { version = "0.5.0", features = [
     "sqlx-postgres",
     "with-uuid",
 ] }
+# modql is a library for offering syntax sugar for SQL queries
+# TODO: Replace this lib to another one (more generally used)
 modql = { version = "0.3.4", features = ["with-sea-query"] }
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"

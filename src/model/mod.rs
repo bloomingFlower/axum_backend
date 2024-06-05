@@ -1,3 +1,5 @@
+//! This module create database pool and manage the database connection
+
 mod base;
 mod error;
 mod store;

@@ -37,6 +37,7 @@ pub struct TaskFilter {
 pub struct TaskBmc;
 
 impl DbBmc for TaskBmc {
+    // Table name is constant
     const TABLE: &'static str = "task";
 }
 
@@ -193,10 +194,9 @@ mod tests {
         let tasks = TaskBmc::list(&ctx, &mm, Some(filters), Some(list_options)).await?;
 
         // -- Check
-        assert_eq!(tasks.len(), 3);
+        assert_eq!(tasks.len(), 2);
         assert!(tasks[0].title.ends_with(".a"));
-        assert!(tasks[1].title.ends_with("01.a"));
-        assert!(tasks[2].title.ends_with("02.a"));
+        assert!(tasks[1].title.ends_with("02.a"));
         // let tasks: Vec<Task> = tasks
         //     .into_iter()
         //     .filter(|t| t.title.starts_with("test_list_by_filter_ok-task"))

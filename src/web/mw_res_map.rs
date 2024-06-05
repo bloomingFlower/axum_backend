@@ -37,6 +37,7 @@ pub async fn main_response_mapper(
                 "error": {
                     "message": message,
                     "data": {
+                        // FIXME: Request UUID should be set at the beginning of the request
                         "req_uuid": uuid.to_string(),
                         "detail": details,
                     }
@@ -51,7 +52,7 @@ pub async fn main_response_mapper(
 
     // -- Build and log the server log line.
     let client_error = client_status_error.unzip().1;
-    // TODO: Need to handler if log_request fail (but should not fail request)
+    // TODO: Need to handle if log_request fail (but should not fail request)
     let _ = log_request(
         uuid,
         req_method,

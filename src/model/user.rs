@@ -57,6 +57,7 @@ impl UserBy for User {}
 impl UserBy for UserForLogin {}
 impl UserBy for UserForAuth {}
 
+// Iden trait is used to convert the struct name to string
 #[derive(Iden)]
 enum UserIden {
     Id,
@@ -67,6 +68,7 @@ enum UserIden {
 pub struct UserBmc;
 
 impl DbBmc for UserBmc {
+    // The table name should be usable in the program
     const TABLE: &'static str = "user";
 }
 
@@ -105,7 +107,12 @@ impl UserBmc {
         Ok(user)
     }
 
-    pub async fn update_pwd(ctx: &Ctx, mm: &ModelManager, id: i64, pwd_clear: &str) -> Result<()> {
+    pub async fn update_pwd(
+        ctx: &Ctx, 
+        mm: &ModelManager, 
+        id: i64, 
+        pwd_clear: &str
+    ) -> Result<()> {
         let db = mm.db();
 
         let user: UserForLogin = Self::get(ctx, mm, id).await?;

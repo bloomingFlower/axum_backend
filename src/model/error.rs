@@ -11,6 +11,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug, Serialize, From, Clone)]
 pub enum Error {
     EntityNotFound {
+        // The entity name is table name(Constant). So, it is static.
         entity: &'static str,
         id: i64,
     },

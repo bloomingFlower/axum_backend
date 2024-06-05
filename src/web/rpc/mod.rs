@@ -82,6 +82,8 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
         params: rpc_params,
     } = rpc_req;
 
+    // Actually, these RPC methods are not appropriate for the RPC API because they are CRUD operations.
+    // RESTful API is more suitable for CRUD operations.
     let result_json = match rpc_method.as_str() {
         "task.create" => exec_rpc_fn!(create_task, ctx, mm, rpc_params),
         "task.list" => exec_rpc_fn!(list_tasks, ctx, mm, rpc_params),
@@ -92,6 +94,7 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
         }
     };
 
+    // The benefit of using JSON-RPC is that the response is always in the same format and the client can easily parse it.
     let body_response = json!({
         "id": rpc_id,
         "result": result_json,

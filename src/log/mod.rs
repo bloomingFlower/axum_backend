@@ -24,6 +24,7 @@ pub async fn log_request(
         .as_millis();
 
     let error_type = web_error.map(|se| se.as_ref().to_string());
+    // CheckPoint
     let error_data = serde_json::to_value(web_error)
         .ok()
         .and_then(|mut v| v.get_mut("data").map(|v| v.take()));

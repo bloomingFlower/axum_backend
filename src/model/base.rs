@@ -22,10 +22,12 @@ pub trait DbBmc {
     const TABLE: &'static str;
 
     fn table_ref() -> TableRef {
+        // SIden is wrapper for Iden
         TableRef::Table(SIden(Self::TABLE).into_iden())
     }
 }
 
+/// Finalize the list options with default values and check the limit
 pub fn finalize_list_options(list_options: Option<ListOptions>) -> Result<ListOptions> {
     if let Some(mut list_options) = list_options {
         if let Some(limit) = list_options.limit {
@@ -48,6 +50,8 @@ pub fn finalize_list_options(list_options: Option<ListOptions>) -> Result<ListOp
     }
 }
 
+/// CRUD operations
+/// Insert a new entity
 pub async fn create<M, E>(_ctx: &Ctx, mm: &ModelManager, data: E) -> Result<i64>
 where
     M: DbBmc,
@@ -57,6 +61,7 @@ where
 
     // Extract the fields and values
     let fields = data.not_none_fields();
+    // Unzip
     let (columns, sea_values) = fields.for_sea_insert();
 
     // Build the SQL query
@@ -76,7 +81,13 @@ where
     Ok(id)
 }
 
-pub async fn get<M, E>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
+/// CRUD operations
+/// Get an entity by id
+pub async fn get<M, E>(
+    _ctx: &Ctx,
+    mm: &ModelManager,
+    id: i64
+) -> Result<E>
 where
     M: DbBmc,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
@@ -104,6 +115,8 @@ where
     Ok(entity)
 }
 
+/// CRUD operations
+/// Get a list of entities with filters
 pub async fn list<M, E, F>(
     _ctx: &Ctx,
     mm: &ModelManager,
@@ -131,6 +144,7 @@ where
 
     // list options
     let list_options = finalize_list_options(list_options)?;
+    // apply list options(limit, offset, order_by)
     list_options.apply_to_sea_query(&mut query);
 
     // Execute the query
@@ -151,6 +165,7 @@ where
 
     // Prepare the fields and values
     let fields = data.not_none_fields();
+    // Zip
     let fields = fields.for_sea_update();
 
     // Build the SQL query
