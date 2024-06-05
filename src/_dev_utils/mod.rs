@@ -32,13 +32,16 @@ pub async fn init_test() -> ModelManager {
         .get_or_init(|| async {
             init_dev().await;
             // Using unwrap for
-            ModelManager::new().await.expect("Failed to initialize ModelManager")
+            ModelManager::new()
+                .await
+                .expect("Failed to initialize ModelManager")
         })
         .await;
 
     mm.clone()
 }
 
+/// Seed tasks for testing.
 pub async fn seed_tasks(ctx: &Ctx, mm: &ModelManager, titles: &[&str]) -> model::Result<Vec<Task>> {
     let mut tasks = Vec::new();
 

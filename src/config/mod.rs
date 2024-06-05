@@ -7,7 +7,9 @@ use std::env;
 use std::str::FromStr;
 use std::sync::OnceLock;
 
+/// Load the configuration from the environment variables
 pub fn load_config() -> &'static Config {
+    // The configuration is loaded only once for the lifetime of the service(Thread safe)
     static INSTANCE: OnceLock<Config> = OnceLock::new();
 
     INSTANCE.get_or_init(|| {
@@ -16,6 +18,7 @@ pub fn load_config() -> &'static Config {
     })
 }
 
+/// The configuration of the service
 #[allow(non_snake_case)]
 pub struct Config {
     pub PWD_KEY: Vec<u8>,
@@ -26,6 +29,7 @@ pub struct Config {
     pub WEB_FOLDER: String,
 }
 
+/// Load the configuration from the environment variables
 impl Config {
     fn load_env_var() -> Result<Config> {
         Ok(Config {

@@ -55,6 +55,7 @@ pub async fn log_request(
     Ok(())
 }
 
+// Struct to represent a log line for a request.
 #[skip_serializing_none]
 #[derive(Serialize)]
 struct RequestLogLine {
