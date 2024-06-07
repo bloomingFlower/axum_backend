@@ -177,15 +177,20 @@ mod tests {
         _dev_utils::seed_tasks(&ctx, &mm, fx_titles).await?;
 
         // -- Exec
-        let filters = serde_json::from_value(json!({
-            // "title": "test_list_by_filter_ok-task 01.%",
-            "title": {
-                "$endsWith": ".a",
-                // "$contains": "01"
-                "$containsAny": ["01", "02"]
+        let filters = serde_json::from_value(json!([
+            {
+                // "title": "test_list_by_filter_ok-task 01.%",
+                "title": {
+                    "$endsWith": ".a",
+                    // "$contains": "01"
+                    "$containsAny": ["01", "02"]
+                },
+                "done": false,
             },
-            "done": false,
-        }))?;
+            {
+                "title": { "$contains": "03" },
+            },
+        ]))?;
         let list_options = serde_json::from_value(json!({
             "limit": 10,
             "offset": 0,
@@ -193,10 +198,12 @@ mod tests {
         }))?;
         let tasks = TaskBmc::list(&ctx, &mm, Some(filters), Some(list_options)).await?;
 
+        println!("tasks: {:#?}", tasks);
         // -- Check
-        assert_eq!(tasks.len(), 2);
-        assert!(tasks[0].title.ends_with(".a"));
+        assert_eq!(tasks.len(), 3);
+        assert!(tasks[0].title.ends_with("03"));
         assert!(tasks[1].title.ends_with("02.a"));
+        assert!(tasks[2].title.ends_with("01.a"));
         // let tasks: Vec<Task> = tasks
         //     .into_iter()
         //     .filter(|t| t.title.starts_with("test_list_by_filter_ok-task"))
@@ -207,11 +214,11 @@ mod tests {
         let tasks: Vec<Task> = TaskBmc::list(
             &ctx,
             &mm,
-            Some(serde_json::from_value(json!({
+            Some(serde_json::from_value(json!([{
                 "title": {
                     "$startsWith": "test_list_by_filter_ok"
                 }
-            }))?),
+            }]))?),
             None,
         )
         .await?;

@@ -140,14 +140,14 @@ mod tests {
 
     #[test]
     fn test_token_from_str_ok() -> Result<()> {
-        let fx_toekn_str = "ZngtaWRlbnRpZmllci0wMQ.MjAyNC0wNS0yOFQyMzo1MDowMFo.sign-b64u-encoded";
+        let fx_token_str = "ZngtaWRlbnRpZmllci0wMQ.MjAyNC0wNS0yOFQyMzo1MDowMFo.sign-b64u-encoded";
         let fx_token = Token {
             identifier: "fx-identifier-01".to_string(),
             exp: "2024-05-28T23:50:00Z".to_string(),
             sign_b64u: "sign-b64u-encoded".to_string(),
         };
 
-        let token: Token = fx_toekn_str.parse()?;
+        let token: Token = fx_token_str.parse()?;
         assert_eq!(token, fx_token);
 
         Ok(())
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn test_validate_web_token_ok() -> Result<()> {
         let fx_user = "user_01";
-        let fx_salt = Uuid::parse_str("salt_01").unwrap();
+        let fx_salt = Uuid::parse_str("e5d87716-65d9-4450-8f59-316ce50962fa").unwrap();
         let fx_duration_sec = 1;
         let token_key = &load_config().TOKEN_KEY;
         let fx_token = _generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn test_validate_web_token_expired() -> Result<()> {
         let fx_user = "user_01";
-        let fx_salt = Uuid::parse_str("salt_01").unwrap();
+        let fx_salt = Uuid::parse_str("e5d87716-65d9-4450-8f59-316ce50962fa").unwrap();
         let fx_duration_sec = 1;
         let token_key = &load_config().TOKEN_KEY;
         let fx_token = _generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
