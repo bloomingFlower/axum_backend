@@ -3,12 +3,11 @@ use crate::pwd;
 use derive_more::From;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
-use std::sync::Arc;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[serde_as]
-#[derive(Debug, Serialize, From, Clone)]
+#[derive(Debug, Serialize, From)]
 pub enum Error {
     EntityNotFound {
         // The entity name is table name(Constant). So, it is static.
@@ -27,11 +26,11 @@ pub enum Error {
 
     // -- Externals
     #[from]
-    Sqlx(#[serde_as(as = "DisplayFromStr")] Arc<sqlx::Error>),
+    Sqlx(#[serde_as(as = "DisplayFromStr")] sqlx::Error),
     #[from]
-    SeaQuery(#[serde_as(as = "DisplayFromStr")] Arc<sea_query::error::Error>),
+    SeaQuery(#[serde_as(as = "DisplayFromStr")] sea_query::error::Error),
     #[from]
-    ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] Arc<modql::filter::IntoSeaError>),
+    ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
 }
 
 // region:    --- Error Boilerplate

@@ -7,6 +7,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
 use serde_json::{json, Value};
+use std::sync::Arc;
 use tracing::debug;
 
 /// Routes for JSON-RPC 2.0
@@ -28,7 +29,7 @@ async fn rpc_handler(
     };
 
     let mut res = _rpc_handler(ctx, mm, rpc_req).await.into_response();
-    res.extensions_mut().insert(rpc_info);
+    res.extensions_mut().insert(Arc::new(rpc_info));
 
     res
 }

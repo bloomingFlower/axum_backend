@@ -6,7 +6,7 @@ use serde_with::{serde_as, DisplayFromStr};
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[serde_as]
-#[derive(Debug, Serialize, From, Clone)]
+#[derive(Debug, Serialize, From)]
 pub enum Error {
     RpcMethodUnknown(String),
     RpcMissingParams {

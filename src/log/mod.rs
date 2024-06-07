@@ -6,6 +6,7 @@ use axum::http::{Method, Uri};
 use serde::Serialize;
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -13,9 +14,9 @@ pub async fn log_request(
     uuid: Uuid,
     req_method: Method,
     uri: Uri,
-    rpc_info: Option<&RpcInfo>,
+    rpc_info: Option<&Arc<RpcInfo>>,
     ctx: Option<Ctx>,
-    web_error: Option<&web::Error>,
+    web_error: Option<&Arc<web::Error>>,
     client_error: Option<ClientError>,
 ) -> Result<()> {
     let timestamp = SystemTime::now()

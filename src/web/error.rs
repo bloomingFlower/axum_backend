@@ -17,7 +17,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 // Custom Serialize and Deserialize for the Error type.
 #[serde_as]
 // AsRefStr is used to convert the Error into a string.
-#[derive(Debug, Serialize, AsRefStr, From, Clone)]
+#[derive(Debug, Serialize, AsRefStr, From)]
 // Serialize the Error as a JSON object with a "type" field and a "data" field.
 #[serde(tag = "type", content = "data")]
 pub enum Error {
@@ -59,7 +59,7 @@ impl IntoResponse for Error {
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
         // Insert the Error into the response.
-        response.extensions_mut().insert(self);
+        response.extensions_mut().insert(Arc::new(self));
 
         response
     }

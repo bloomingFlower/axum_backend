@@ -5,7 +5,7 @@ use crate::model::Result;
 use modql::field::HasFields;
 use modql::filter::{FilterGroups, ListOptions};
 use modql::SIden;
-use sea_query::{Expr, Iden, IntoIden, PostgresQueryBuilder, Query, TableRef};
+use sea_query::{Condition, Expr, Iden, IntoIden, PostgresQueryBuilder, Query, TableRef};
 use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
@@ -83,11 +83,7 @@ where
 
 /// CRUD operations
 /// Get an entity by id
-pub async fn get<M, E>(
-    _ctx: &Ctx,
-    mm: &ModelManager,
-    id: i64
-) -> Result<E>
+pub async fn get<M, E>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
 where
     M: DbBmc,
     E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
@@ -138,7 +134,7 @@ where
     // condition from filter
     if let Some(filter) = filters {
         let filters: FilterGroups = filter.into();
-        let cond = filters.try_into()?;
+        let cond: Condition = filters.try_into()?;
         query.cond_where(cond);
     }
 
