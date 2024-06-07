@@ -5,6 +5,7 @@ mod error;
 mod log;
 mod model;
 mod pwd;
+mod rpc;
 mod token;
 mod utils;
 mod web;
@@ -18,7 +19,7 @@ pub use self::error::{Error, Result};
 use crate::model::ModelManager;
 use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
-use crate::web::{routes_login, routes_static, rpc};
+use crate::web::{routes_login, routes_rpc, routes_static};
 
 use axum::{middleware, Router};
 use tokio::net::TcpListener;
@@ -49,7 +50,8 @@ async fn main() -> Result<()> {
     //     // Check ctx and token
     //     .route_layer(middleware::from_fn(mw_require_auth));
 
-    let routes_rpc = rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
+    let routes_rpc =
+        routes_rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
 
     // Initialize the Router with all the routes
     let routes_all = Router::new()

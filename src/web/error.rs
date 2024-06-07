@@ -1,7 +1,7 @@
 //! Web Module 에러를 핸들링하는 모듈입니다.
 //! serde_as 를 사용하여 DisplayFromStr 을 사용합니다.
 
-use crate::{model, pwd, token, web};
+use crate::{model, pwd, rpc, token, web};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
@@ -42,15 +42,8 @@ pub enum Error {
     Pwd(pwd::Error),
     #[from]
     Token(token::Error),
-
-    // -- RPC
-    RpcMethodUnknown(String),
-    RpcMissingParams {
-        rpc_method: String,
-    },
-    RpcFailJsonParams {
-        rpc_method: String,
-    },
+    #[from]
+    Rpc(rpc::Error),
 
     // -- External Modules
     #[from]

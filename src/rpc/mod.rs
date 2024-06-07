@@ -1,26 +1,22 @@
+mod error;
 mod params;
 mod task_rpc;
 
+pub use self::error::{Error, Result};
 use params::*;
 
 use crate::ctx::Ctx;
 use crate::model::ModelManager;
-use crate::web::rpc::task_rpc::{create_task, delete_task, list_tasks, update_task};
-use crate::web::{Error, Result};
-use axum::extract::State;
-use axum::response::{IntoResponse, Response};
-use axum::routing::post;
-use axum::{Json, Router};
+use crate::rpc::task_rpc::{create_task, delete_task, list_tasks, update_task};
 use serde::Deserialize;
-use serde_json::{from_value, json, to_value, Value};
-use tracing::debug;
+use serde_json::{from_value, to_value, Value};
 
 /// JSON-RPC 2.0 Request
 #[derive(Deserialize)]
-struct RpcRequest {
-    id: Option<Value>,
-    method: String,
-    params: Option<Value>,
+pub struct RpcRequest {
+    pub id: Option<Value>,
+    pub method: String,
+    pub params: Option<Value>,
 }
 
 /// JSON-RPC 2.0 INFO
@@ -28,30 +24,6 @@ struct RpcRequest {
 pub struct RpcInfo {
     pub id: Option<Value>,
     pub method: String,
-}
-
-/// Routes for JSON-RPC 2.0
-pub fn routes(mm: ModelManager) -> Router {
-    Router::new()
-        .route("/rpc", post(rpc_handler))
-        .with_state(mm)
-}
-
-/// JSON-RPC 2.0 Handler
-async fn rpc_handler(
-    State(mm): State<ModelManager>,
-    ctx: Ctx,
-    Json(rpc_req): Json<RpcRequest>,
-) -> Response {
-    let rpc_info = RpcInfo {
-        id: rpc_req.id.clone(),
-        method: rpc_req.method.clone(),
-    };
-
-    let mut res = _rpc_handler(ctx, mm, rpc_req).await.into_response();
-    res.extensions_mut().insert(rpc_info);
-
-    res
 }
 
 /// Define the macro to execute the RPC function
@@ -74,13 +46,9 @@ macro_rules! exec_rpc_fn {
     };
 }
 
-/// RPC Handler
-async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result<Json<Value>> {
-    let RpcRequest {
-        id: rpc_id,
-        method: rpc_method,
-        params: rpc_params,
-    } = rpc_req;
+pub async fn exec_rpc(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result<Value> {
+    let rpc_method = rpc_req.method;
+    let rpc_params = rpc_req.params;
 
     // Actually, these RPC methods are not appropriate for the RPC API because they are CRUD operations.
     // RESTful API is more suitable for CRUD operations.
@@ -89,18 +57,9 @@ async fn _rpc_handler(ctx: Ctx, mm: ModelManager, rpc_req: RpcRequest) -> Result
         "task.list" => exec_rpc_fn!(list_tasks, ctx, mm, rpc_params),
         "task.update" => exec_rpc_fn!(update_task, ctx, mm, rpc_params),
         "task.delete" => exec_rpc_fn!(delete_task, ctx, mm, rpc_params),
-        _ => {
-            return Err(Error::RpcMethodUnknown(rpc_method));
-        }
+        _ => return Err(Error::RpcMethodUnknown(rpc_method)),
     };
 
     // The benefit of using JSON-RPC is that the response is always in the same format and the client can easily parse it.
-    let body_response = json!({
-        "id": rpc_id,
-        "result": result_json,
-    });
-
-    debug!("{:<12} - _rpc_handler - method: {rpc_method}", "HANDLER");
-
-    Ok(Json(body_response))
+    Ok(result_json)
 }
