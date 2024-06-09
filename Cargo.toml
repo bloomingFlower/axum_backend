@@ -31,7 +31,7 @@ tower-cookies = "0.10.0"
 # Lazy regex is a library for lazy regex matching
 lazy-regex = "3.1.0"
 # strum_macros is a library for deriving enums from strings
-strum_macros = "0.26.3"
+strum_macros = "0.26.4"
 # uuid is a library for generating UUIDs(version 4 means random UUIDs)
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 serde_with = "3.8.1"
@@ -49,7 +49,7 @@ sea-query-binder = { version = "0.5.0", features = [
 ] }
 # modql is a library for offering syntax sugar for SQL queries
 # TODO: Replace this lib to another one (more generally used)
-modql = { version = "0.3.4", features = ["with-sea-query"] }
+modql = { version = "0.3.10", features = ["with-sea-query"] }
 # tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
