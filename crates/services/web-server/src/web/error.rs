@@ -24,7 +24,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Login
-    LoginFail,
     LoginFailUsernameNotFound,
     LoginFailUserHasNoPwd {
         user_id: i64,

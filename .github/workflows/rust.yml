@@ -40,11 +40,11 @@ jobs:
         run: sleep 60
       # Add a step to run the server before tests
       - name: Start Server
-        run: cargo run &
+        run: cargo run -p web-server &
       # Ensure the server has time to start up
       - name: Wait for Server
         run: sleep 5
       # Finally, run tests
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo run -p web-server --example test
         #cargo test --verbose
