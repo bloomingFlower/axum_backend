@@ -1,0 +1,39 @@
+[package]
+name = "web-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# -- App Libs
+lib-utils = { path = "../../libs/lib-utils"}
+lib-rpc = { path = "../../libs/lib-rpc"}
+lib-auth = { path = "../../libs/lib-auth"}
+lib-core = { path = "../../libs/lib-core"}
+# Tokio is an asynchronous runtime for Rust
+tokio = { version = "1.38.0", features = ["full"] }
+# async-trait is a library for defining async functions that return a Future
+async-trait = "0.1.80"
+# Serde is a serialization/deserialization library for Rust
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+serde_with = "3.8.1"
+# Axum is a web framework based on hyper, the Rust HTTP library
+axum = { version = "0.7.5" }
+tower-http = { version = "0.5.2", features = ["fs"] }
+tower-cookies = "0.10.0"
+# tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+# uuid is a library for generating UUIDs(version 4 means random UUIDs)
+uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
+# strum_macros is a library for deriving enums from strings
+strum_macros = "0.26.4"
+derive_more = { version = "1.0.0-beta", features = ["from"] }
+
+[dev-dependencies]
+# Anyhow is a Rust library for Error type that can represent any error
+anyhow = "1.0.86"
+# HTTP testing utilities for Axum applications
+httpc-test = "0.1.9"
+# Serial_test is a library for serializing test output
+serial_test = "3.1.1"

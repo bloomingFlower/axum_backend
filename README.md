@@ -17,14 +17,23 @@
 ```
 
 ## How to Run
+
+### Generate the key
+```sh
+cargo run -p gen-key
+```
+
+
 ### Run Web Server
 ```sh
-cargo watch -q -c -w src/ -w .cargo/ -x 'run'
+#cargo watch -q -c -w src/ -w .cargo/ -x 'run'
+cargo run -p web-server
 ```
 ### Run Tests
 ```sh
-cargo watch -q -c -x "test -- --nocapture"
-cargo watch -q -c -w examples/ -x "run --example test"
+#cargo watch -q -c -x "test -- --nocapture"
+#cargo watch -q -c -w examples/ -x "run --example test"
+cargo run -p web-server --example test
 ```
 
 ### Starting the DB

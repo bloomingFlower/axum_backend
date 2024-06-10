@@ -1,72 +1,95 @@
-[package]
-name = "axum_backend"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.78.0"
-description = "A backend for the Axum web framework"
-repository = "https://github.com/bloomingFlower/axum_backend"
+[workspace.lints.rust]
+# forbid unsafe code in the workspace
+unsafe_code = "forbid"
+# unused = "allow" # For experimental dev.
 
-[profile.release]
-# Optimize the speed and size but takes more compile time (https://doc.rust-lang.org/cargo/reference/profiles.html)
-lto = "fat"
+[workspace]
+# resolver 2 is the 2021 edition.
+resolver = "2"
+members = [
+    # -- Application Libraries
+    "crates/libs/lib-utils", # e.g., base64, time.
+    "crates/libs/lib-rpc", # e.g., rpc routing.
+    "crates/libs/lib-auth", # e.g., for pwd, token.
+    "crates/libs/lib-core", # e.g., model, ctx, config.
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+    # -- Application Services
+    "crates/services/web-server",
 
-[dependencies]
-# Tokio is an asynchronous runtime for Rust
-tokio = { version = "1.38.0", features = ["full"] }
-# async-trait is a library for defining async functions that return a Future
-async-trait = "0.1.80"
-# Axum is a web framework based on hyper, the Rust HTTP library
-axum = { version = "0.7.5" }
-# HTTP testing utilities for Axum applications
-httpc-test = "0.1.9"
-# Serde is a serialization/deserialization library for Rust
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
-# Tower is a library of modular and reusable components for building robust networking clients and servers
-tower = "0.4.13"
-tower-http = { version = "0.5.2", features = ["fs"] }
-tower-cookies = "0.10.0"
-# Lazy regex is a library for lazy regex matching
-lazy-regex = "3.1.0"
-# strum_macros is a library for deriving enums from strings
-strum_macros = "0.26.4"
-# uuid is a library for generating UUIDs(version 4 means random UUIDs)
-uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
-serde_with = "3.8.1"
-# sqlx is a database driver for Rust
-sqlx = { version = "0.7.4", features = [
-    "runtime-tokio-rustls",
-    "postgres",
-    "uuid",
-    "time",
-] }
-sea-query = "0.30.7"
-sea-query-binder = { version = "0.5.0", features = [
-    "sqlx-postgres",
-    "with-uuid",
-] }
-# modql is a library for offering syntax sugar for SQL queries
-# TODO: Replace this lib to another one (more generally used)
-modql = { version = "0.3.10", features = ["with-sea-query"] }
-# tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-# Crypt & Encoding
-hmac = "0.12.1"
-sha2 = "0.10.8"
-base64 = "0.22.1"
-time = "0.3.36"
-derive_more = { version = "1.0.0-beta", features = ["from"] }
-
-[dev-dependencies]
-# Anyhow is a Rust library for Error type that can represent any error
-anyhow = "1.0.86"
-# Color-eyre is a library for colorful error reports
-color-eyre = "0.6.3"
-# HTTP testing utilities for Axum applications
-httpc-test = "0.1.9"
-# Serial_test is a library for serializing test output
-serial_test = "3.1.1"
-rand = "0.8.5"
+    # -- Tools
+    "crates/tools/gen-key",
+]
+#
+#[package]
+#name = "axum_backend"
+#version = "0.1.0"
+#edition = "2021"
+#rust-version = "1.78.0"
+#description = "A backend for the Axum web framework"
+#repository = "https://github.com/bloomingFlower/axum_backend"
+#
+#[profile.release]
+## Optimize the speed and size but takes more compile time (https://doc.rust-lang.org/cargo/reference/profiles.html)
+#lto = "fat"
+#
+## See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#
+#[dependencies]
+## Tokio is an asynchronous runtime for Rust
+#tokio = { version = "1.38.0", features = ["full"] }
+## async-trait is a library for defining async functions that return a Future
+#async-trait = "0.1.80"
+## Axum is a web framework based on hyper, the Rust HTTP library
+#axum = { version = "0.7.5" }
+## HTTP testing utilities for Axum applications
+#httpc-test = "0.1.9"
+## Serde is a serialization/deserialization library for Rust
+#serde = { version = "1.0.203", features = ["derive"] }
+#serde_json = "1.0.117"
+## Tower is a library of modular and reusable components for building robust networking clients and servers
+#tower = "0.4.13"
+#tower-http = { version = "0.5.2", features = ["fs"] }
+#tower-cookies = "0.10.0"
+## Lazy regex is a library for lazy regex matching
+#lazy-regex = "3.1.0"
+## strum_macros is a library for deriving enums from strings
+#strum_macros = "0.26.4"
+## uuid is a library for generating UUIDs(version 4 means random UUIDs)
+#uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
+#serde_with = "3.8.1"
+## sqlx is a database driver for Rust
+#sqlx = { version = "0.7.4", features = [
+#    "runtime-tokio-rustls",
+#    "postgres",
+#    "uuid",
+#    "time",
+#] }
+#sea-query = "0.30.7"
+#sea-query-binder = { version = "0.5.0", features = [
+#    "sqlx-postgres",
+#    "with-uuid",
+#    "with-time",
+#] }
+## modql is a library for offering syntax sugar for SQL queries
+## TODO: Replace this lib to another one (more generally used)
+#modql = { version = "0.3.10", features = ["with-sea-query"] }
+## tracing is a framework for instrumenting Rust programs to collect structured, event-based diagnostic information
+#tracing = "0.1.40"
+#tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+## Crypt & Encoding
+#hmac = "0.12.1"
+#sha2 = "0.10.8"
+#base64 = "0.22.1"
+#time = "0.3.36"
+#derive_more = { version = "1.0.0-beta", features = ["from"] }
+#
+#[dev-dependencies]
+## Anyhow is a Rust library for Error type that can represent any error
+#anyhow = "1.0.86"
+## Color-eyre is a library for colorful error reports
+#color-eyre = "0.6.3"
+## HTTP testing utilities for Axum applications
+#httpc-test = "0.1.9"
+## Serial_test is a library for serializing test output
+#serial_test = "3.1.1"
+#rand = "0.8.5"
