@@ -1,0 +1,12 @@
+[package]
+name = "gen-key"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# -- App Crates
+lib-utils = { path = "../../libs/lib-utils"}
+# -- Others
+rand = "0.8.5"
+# Anyhow is a Rust library for Error type that can represent any error
+anyhow = "1.0.86"
