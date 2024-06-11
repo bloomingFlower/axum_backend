@@ -2,6 +2,9 @@
 name = "lib-utils"
 version = "0.1.0"
 edition = "2021"
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
 
 [lib]
 doctest = false
@@ -10,5 +13,5 @@ doctest = false
 workspace = true
 
 [dependencies]
-base64 = "0.21"
+base64 = "0.22.1"
 time = {version = "0.3", features = ["formatting", "parsing", "serde"]}

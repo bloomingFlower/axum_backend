@@ -67,6 +67,8 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - [ ] GraphQL
 - [ ] gRPC
 - [ ] WebSockets
+### Messeging Queue
+- [ ] Apache Kafka
 
 ### Prod Code
 - apps
@@ -84,3 +86,4 @@ ALTER DATABASE postgres SET log_statement = 'all';
 
 ### Refer
 - https://apihandyman.io/do-you-really-know-why-you-prefer-rest-over-rpc/#examples
+- https://dev.to/ghost/rust-project-structure-example-step-by-step-3ee
