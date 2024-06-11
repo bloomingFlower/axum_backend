@@ -68,7 +68,10 @@ impl IntoResponse for Error {
 // endregion: --- Axum IntoResponse
 
 impl core::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
+    fn fmt(
+        &self, 
+        fmt: &mut core::fmt::Formatter
+    ) -> Result<(), Error> {
         write!(fmt, "{self:?}")
     }
 }

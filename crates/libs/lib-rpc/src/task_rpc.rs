@@ -16,6 +16,7 @@ pub async fn create_task(
     let id = TaskBmc::create(&ctx, &mm, data).await?;
     let task = TaskBmc::get(&ctx, &mm, id).await?;
 
+    // Return the created task
     Ok(task)
 }
 
@@ -26,6 +27,8 @@ pub async fn list_tasks(
     params: ParamsList<TaskFilter>,
 ) -> Result<Vec<Task>> {
     let tasks = TaskBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+
+    // Return the list of tasks
     Ok(tasks)
 }
 
@@ -41,11 +44,16 @@ pub async fn update_task(
 
     let task = TaskBmc::get(&ctx, &mm, id).await?;
 
+    // Return the updated task
     Ok(task)
 }
 
 /// Delete a task with the given id
-pub async fn delete_task(ctx: Ctx, mm: ModelManager, params: ParamsIded) -> Result<Task> {
+pub async fn delete_task(
+    ctx: Ctx, 
+    mm: ModelManager, 
+    params: ParamsIded
+) -> Result<Task> {
     let ParamsIded { id } = params;
     let task = TaskBmc::get(&ctx, &mm, id).await?;
     TaskBmc::delete(&ctx, &mm, id).await?;

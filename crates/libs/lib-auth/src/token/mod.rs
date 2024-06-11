@@ -66,7 +66,12 @@ pub fn validate_web_token(origin_token: &Token, salt: Uuid) -> Result<()> {
 }
 
 // region: Private functions
-fn _generate_token(identifier: &str, duration_sec: i64, salt: Uuid, key: &[u8]) -> Result<Token> {
+fn _generate_token(
+    identifier: &str, 
+    duration_sec: i64, 
+    salt: Uuid, 
+    key: &[u8]
+) -> Result<Token> {
     let identifier = identifier.to_string();
     let exp = now_utc_plus_sec_str(duration_sec);
     let sign_b64u = _token_sign_into_b64u(&identifier, &exp, salt, key)?;
@@ -78,7 +83,11 @@ fn _generate_token(identifier: &str, duration_sec: i64, salt: Uuid, key: &[u8]) 
     })
 }
 
-fn _validate_token_sign_and_exp(origin_token: &Token, salt: Uuid, key: &[u8]) -> Result<()> {
+fn _validate_token_sign_and_exp(
+    origin_token: &Token, 
+    salt: Uuid, 
+    key: &[u8]
+) -> Result<()> {
     let new_sign_b64u =
         _token_sign_into_b64u(&origin_token.identifier, &origin_token.exp, salt, key)?;
 
@@ -96,7 +105,12 @@ fn _validate_token_sign_and_exp(origin_token: &Token, salt: Uuid, key: &[u8]) ->
 }
 
 // Create a token from the identifier, expiration date and salt.
-fn _token_sign_into_b64u(identifier: &str, exp: &str, salt: Uuid, key: &[u8]) -> Result<String> {
+fn _token_sign_into_b64u(
+    identifier: &str, 
+    exp: &str, 
+    salt: Uuid, 
+    key: &[u8]
+) -> Result<String> {
     let content = format!("{}.{}", b64u_encode(identifier), b64u_encode(exp));
     // Hmac is a struct that represents the HMAC algorithm.
     // b64u encode is not encryption process, it is encoding process.

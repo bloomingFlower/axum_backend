@@ -2,7 +2,7 @@ use lib_utils::envs::get_env;
 use std::sync::OnceLock;
 
 /// Load the configuration from the environment variables
-pub fn load_config() -> &'static Config {
+pub fn web_config() -> &'static Config {
     // The configuration is loaded only once for the lifetime of the service(Thread safe)
     static INSTANCE: OnceLock<Config> = OnceLock::new();
 

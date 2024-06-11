@@ -4,7 +4,7 @@ mod error;
 mod log;
 mod web;
 // #[cfg(test)] // Commented during the early development
-use config::load_config;
+use config::web_config;
 
 /// Export the Error and Result types
 pub use self::error::{Error, Result};

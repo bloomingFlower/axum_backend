@@ -3,7 +3,10 @@ use hmac::{Hmac, Mac};
 use lib_utils::b64::b64u_encode;
 use sha2::Sha512;
 
-pub fn hmac_sha512_hash(key: &[u8], to_hash: &ContentToHash) -> Result<String> {
+pub fn hmac_sha512_hash(
+    key: &[u8],
+    to_hash: &ContentToHash
+) -> Result<String> {
     let ContentToHash { content, salt } = to_hash;
 
     // Create a HMAC-SHA-512 from key.
