@@ -71,7 +71,7 @@ impl core::fmt::Display for Error {
     fn fmt(
         &self, 
         fmt: &mut core::fmt::Formatter
-    ) -> Result<(), Error> {
+    ) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
     }
 }
