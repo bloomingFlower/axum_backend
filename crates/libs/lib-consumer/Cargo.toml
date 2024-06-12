@@ -1,0 +1,14 @@
+[package]
+name = "lib-consumer"
+edition = "2021"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rdkafka = { version = "0.36.2", features = ["cmake-build"] }
+futures = "0.3.30"

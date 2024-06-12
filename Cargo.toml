@@ -13,16 +13,18 @@ unsafe_code = "forbid"
 resolver = "2" # specifies edition = "2021" or a newer edition
 members = [ # Packages to include in the workspace.
     # -- Application Libraries
-    "crates/libs/lib-utils", # e.g., base64, time.
-    "crates/libs/lib-rpc",   # e.g., rpc routing.
-    "crates/libs/lib-auth",  # e.g., for pwd, token.
-    "crates/libs/lib-core",  # e.g., model, ctx, config.
+    "crates/libs/lib-utils",     # e.g., base64, time.
+    "crates/libs/lib-rpc",       # e.g., rpc routing.
+    "crates/libs/lib-auth",      # e.g., for pwd, token.
+    "crates/libs/lib-core",      # e.g., model, ctx, config.
+    "crates/libs/lib-producer",  # e.g., kafka producer
+    "crates/libs/lib-consumer",  # e.g., kafka consumer
 
     # -- Application Services
     "crates/services/web-server",
 
     # -- Tools
-    "crates/tools/gen-key",
+    "crates/tools/gen-key", "crates/libs/lib-producer", "crates/libs/lib-consumer",
 ]
 
 [profile.release]

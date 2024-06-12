@@ -1,4 +1,4 @@
-[![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
+`[![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
 [![rust-clippy analyze](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml)
 # Rust Web Server
 ```plaintext
@@ -71,7 +71,9 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - [ ] WebSockets
 
 ### Broker
-- [ ] Apache Kafka
+- [ ] Apache Kafka Cluster(Strimizi)
+- [ ] KEDA
+- [ ] Add Parameters to Prometheus
 
 ### Prod Code
 - apps

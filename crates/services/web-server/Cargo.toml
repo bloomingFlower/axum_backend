@@ -12,6 +12,8 @@ lib-utils = { path = "../../libs/lib-utils"}
 lib-rpc = { path = "../../libs/lib-rpc"}
 lib-auth = { path = "../../libs/lib-auth"}
 lib-core = { path = "../../libs/lib-core"}
+lib-producer = { path = "../../libs/lib-producer"}
+lib-consumer = { path = "../../libs/lib-consumer"}
 # Tokio is an asynchronous runtime for Rust
 tokio = { version = "1.38.0", features = ["full"] }
 # async-trait is a library for defining async functions that return a Future
