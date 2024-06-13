@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-/// 
+/// Struct to hold the response from the Hacker News API.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HackerNewsResponse {
     pub hits: Vec<HNSearchResult>,
 }
 
+/// Struct to hold the search result from the Hacker News API.
 #[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub struct HNSearchResult {
     pub author: String,
@@ -19,6 +20,7 @@ pub struct HNSearchResult {
     pub points: u32,
 }
 
+/// Fetches the search results from the Hacker News API.
 pub async fn fetch_hn_stories(
     search_term: String,
     search_result_limit: u32,

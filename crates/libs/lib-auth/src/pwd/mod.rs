@@ -1,39 +1,88 @@
 mod error;
-mod hmac_hasher;
+mod scheme;
 
 pub use self::error::{Error, Result};
-
-use crate::auth_config;
-use crate::pwd::hmac_hasher::hmac_sha512_hash;
+use crate::pwd::scheme::{get_scheme, SchemeStatus, DEFAULT_SCHEME};
+use lazy_regex::regex_captures;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct ContentToHash {
-    pub content: String, // Clear content.
-    pub salt: Uuid,      // Clear salt.
+    pub content: String,
+    pub salt: Uuid,
 }
 
-/// Hash the password with the default scheme.
-pub fn hash_pwd(
-    to_hash: &ContentToHash
-) -> Result<String> {
-    // Load the password key from the configuration.
-    let key = &auth_config().PWD_KEY;
-    // Encrypt the password.
-    let hashed = hmac_sha512_hash(key, to_hash)?;
-    // Return the encrypted password with a key version prefix.
-    Ok(format!("#01#{hashed}"))
+pub fn hash_pwd(to_hash: &ContentToHash) -> Result<String> {
+    hash_for_scheme(DEFAULT_SCHEME, to_hash)
 }
 
-/// Validate if an ContentToHash matches.
-pub fn validate_pwd(
-    enc_content: &ContentToHash,
-    pwd_ref: &str
-) -> Result<()> {
-    let pwd = hash_pwd(enc_content)?;
+pub fn validate_pwd(to_hash: &ContentToHash, pwd_ref: &str) -> Result<SchemeStatus> {
+    let PwdParts {
+        scheme_name,
+        hashed,
+    } = pwd_ref.parse()?;
 
-    if pwd == pwd_ref {
-        Ok(())
+    validate_for_scheme(&scheme_name, to_hash, &hashed)?;
+
+    if scheme_name == DEFAULT_SCHEME {
+        Ok(SchemeStatus::Ok)
     } else {
-        Err(Error::NotMatching)
+        Ok(SchemeStatus::Outdated)
+    }
+}
+
+fn hash_for_scheme(scheme_name: &str, to_hash: &ContentToHash) -> Result<String> {
+    let scheme = get_scheme(scheme_name)?;
+    let pwd_hashed = scheme.hash(to_hash)?;
+
+    Ok(format!("#{}#{}", scheme_name, pwd_hashed))
+}
+
+fn validate_for_scheme(scheme_name: &str, to_hash: &ContentToHash, pwd_ref: &str) -> Result<()> {
+    let scheme = get_scheme(scheme_name)?;
+    scheme.validate(to_hash, pwd_ref)?;
+    Ok(())
+}
+
+struct PwdParts {
+    /// The scheme only
+    scheme_name: String,
+    /// The hashed password
+    hashed: String,
+}
+
+impl FromStr for PwdParts {
+    type Err = Error;
+
+    fn from_str(pwd_with_scheme: &str) -> Result<Self> {
+        regex_captures!(r#"^#(\w+)#(.*)"#, pwd_with_scheme,)
+            .map(|(_, scheme, hashed)| Self {
+                scheme_name: scheme.to_string(),
+                hashed: hashed.to_string(),
+            })
+            .ok_or(Error::PwdWithSchemeFailedParse)
+    }
+}
+
+/// cargo watch -q -c -x "test -q -p lib-auth test_multi_scheme -- --nocapture"
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+
+    #[test]
+    fn test_multi_scheme_ok() -> Result<()> {
+        let fx_salt = Uuid::parse_str("e5d87716-65d9-4450-8f59-316ce50962fa")?;
+        let fx_to_hash = ContentToHash {
+            content: "hello world".to_string(),
+            salt: fx_salt,
+        };
+
+        let pwd_hashed = hash_pwd(&fx_to_hash)?;
+        println!("--> pwd_hashed: {pwd_hashed}");
+        let pwd_validate = validate_pwd(&fx_to_hash, &pwd_hashed)?;
+        println!("--> pwd_validate: {pwd_validate}");
+
+        Ok(())
     }
 }

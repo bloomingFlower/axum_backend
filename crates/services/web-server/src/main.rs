@@ -18,7 +18,7 @@ use lib_core::model::ModelManager;
 use axum::{middleware, Router};
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -40,16 +40,16 @@ async fn main() -> Result<()> {
     // let producer_task = tokio::spawn(async {
     //     lib_producer::produce().await.expect("Fail to produce message");
     // });
-    // 
+    //
     // // Spawn a new task for consuming messages from Kafka
     // let consumer_task = tokio::spawn(async {
     //     sleep(Duration::from_secs(10)).await;
     //     lib_consumer::consume().await;
     // });
-    // 
+    //
     // // Wait for both tasks to complete
     // let _ = tokio::try_join!(producer_task, consumer_task);
-    
+
     // Initialize the Model Manager and wait for it to be ready
     let mm = ModelManager::new().await?;
 

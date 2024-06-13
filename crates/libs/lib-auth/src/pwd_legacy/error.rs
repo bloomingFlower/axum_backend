@@ -1,15 +1,15 @@
-use crate::pwd::scheme;
-use derive_more::From;
 use serde::Serialize;
 
+// Define the Result type for simplicity
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize, From)]
+#[derive(Debug, Serialize)]
 pub enum Error {
-    #[from]
-    Scheme(scheme::Error),
+    // Key
+    KeyFail,
 
-    PwdWithSchemeFailedParse,
+    // Pwd
+    NotMatching,
 }
 
 impl core::fmt::Display for Error {

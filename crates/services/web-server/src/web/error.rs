@@ -5,7 +5,7 @@ use crate::web;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
-use lib_auth::{pwd, token};
+use lib_auth::{pwd_legacy, token};
 use lib_core::model;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -40,7 +40,7 @@ pub enum Error {
     #[from]
     Model(model::Error),
     #[from]
-    Pwd(pwd::Error),
+    Pwd(pwd_legacy::Error),
     #[from]
     Token(token::Error),
     #[from]
@@ -68,10 +68,7 @@ impl IntoResponse for Error {
 // endregion: --- Axum IntoResponse
 
 impl core::fmt::Display for Error {
-    fn fmt(
-        &self, 
-        fmt: &mut core::fmt::Formatter
-    ) -> core::result::Result<(), core::fmt::Error> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
     }
 }
@@ -85,7 +82,6 @@ impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
         use web::Error::*;
 
-        #[allow(unreachable_patterns)]
         match self {
             // -- Login
             LoginFailUsernameNotFound

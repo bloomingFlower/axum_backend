@@ -1,15 +1,15 @@
-use std::time::Duration;
-use rdkafka::config::ClientConfig;
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::error::KafkaError;
-use crate::hn::HNSearchResult;
-
 mod hn;
 
+use crate::hn::HNSearchResult;
+use rdkafka::config::ClientConfig;
+use rdkafka::error::KafkaError;
+use rdkafka::producer::{FutureProducer, FutureRecord};
+use std::time::Duration;
+
 async fn send_to_kafka(
-    host: &str, 
-    topic: &str, 
-    payload: Vec<HNSearchResult>
+    host: &str,
+    topic: &str,
+    payload: Vec<HNSearchResult>,
 ) -> Result<(), KafkaError> {
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", host)
@@ -19,10 +19,8 @@ async fn send_to_kafka(
         let buffer = serde_json::to_string(&search_result).unwrap();
         let delivery_status = producer
             .send(
-                FutureRecord::to(topic)
-                    .payload(&buffer)
-                    .key("some_key"),
-                Duration::from_secs(10)
+                FutureRecord::to(topic).payload(&buffer).key("some_key"),
+                Duration::from_secs(10),
             )
             .await;
 
@@ -38,7 +36,9 @@ async fn send_to_kafka(
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
     let stories = hn::fetch_hn_stories("Ruby".into(), 100).await?;
     println!("Fetched {} stories", stories.hits.len());
-    send_to_kafka("localhost:9092", "hnstories", stories.hits).await.expect("Kafka test failed!");
-    
+    send_to_kafka("localhost:9092", "hnstories", stories.hits)
+        .await
+        .expect("Kafka test failed!");
+
     Ok(())
 }

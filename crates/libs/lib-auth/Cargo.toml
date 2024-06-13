@@ -26,7 +26,7 @@ argon2 = {version="0.5.3", features=["std"]}
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 # Lazy regex is a library for lazy regex matching
 lazy-regex = "3.1.0"
-
+derive_more = { version = "1.0.0-beta", features = ["from"] }
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

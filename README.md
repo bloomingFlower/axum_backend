@@ -97,5 +97,6 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168
 - https://burgers.io/custom-logging-in-rust-using-tracing
 
-### Ref Keyword
-- Calisti
+### PWD Multi-Scheme
+- #1 HMAC (#01#)
+- #2 Argon2 (#02#)
