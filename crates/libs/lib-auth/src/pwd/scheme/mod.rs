@@ -6,6 +6,7 @@ use std::fmt;
 
 use crate::pwd::ContentToHash;
 
+/// HMAC
 pub const DEFAULT_SCHEME: &str = "01";
 
 /// Dynamic dispatch for the hashing scheme
@@ -35,6 +36,7 @@ impl fmt::Display for SchemeStatus {
 /// dyn Scheme is a trait object
 pub fn get_scheme(scheme_name: &str) -> Result<Box<dyn Scheme>> {
     match scheme_name {
+        // Scheme is trait type
         "01" => Ok(Box::new(scheme_01::Scheme01)),
         _ => Err(Error::SchemeNotFound(scheme_name.to_string())),
     }

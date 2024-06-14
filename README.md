@@ -60,19 +60,20 @@ ALTER DATABASE postgres SET log_statement = 'all';
 
 ## Future Work
 ### Database
-- [ ] ORM (sqlb > sea-query)
+- [x] ORM (sqlb > sea-query)
 - [ ] ScyllaDB
 
 ### Protocols
 - [x] REST
-- [x] JSON-RPC
+- [x] JSON-RPC 2.0
 - [ ] GraphQL
 - [ ] gRPC
 - [ ] WebSockets
 
 ### Broker
 - [ ] Apache Kafka Cluster(Strimizi)
-- [ ] KEDA
+  - [x] Install the Strimizi in Cluster
+- [ ] KEDA(Kubernetes Event-Driven Autoscaling)
 - [ ] Add Parameters to Prometheus
 
 ### Prod Code
@@ -84,7 +85,7 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - examples
 - tests
 
-### Don't use
+### Don't use..
 - context(..)
 - expect(..)
 - unwrap()
@@ -96,7 +97,17 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - https://dev.to/ciscoemerge/how-to-build-a-simple-kafka-producerconsumer-application-in-rust-3pl4
 - https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168
 - https://burgers.io/custom-logging-in-rust-using-tracing
+- https://strimzi.io
+- https://keda.sh/docs/2.14/scalers/apache-kafka
 
 ### PWD Multi-Scheme
 - #1 HMAC (#01#)
 - #2 Argon2 (#02#)
+
+### Add a new topic in Docker
+```sh
+docker exec broker \
+>    kafka-topics --bootstrap-server broker:9092 \
+>                 --create \
+>                 --topic hnstories
+```

@@ -51,6 +51,7 @@ struct PwdParts {
     hashed: String,
 }
 
+/// Parse
 impl FromStr for PwdParts {
     type Err = Error;
 

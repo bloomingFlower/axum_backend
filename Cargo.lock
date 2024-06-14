@@ -1191,7 +1191,10 @@ name = "lib-consumer"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "log",
  "rdkafka",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
