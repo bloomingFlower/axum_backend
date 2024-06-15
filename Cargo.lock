@@ -1196,6 +1196,7 @@ dependencies = [
  "lib-utils",
  "serde",
  "sha2",
+ "tokio",
  "uuid",
 ]
 

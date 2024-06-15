@@ -9,14 +9,14 @@ pub enum Error {
     #[from]
     Scheme(scheme::Error),
 
+    FailSpawnBlockForValidate,
+    FailSpawnBlockForHash,
+
     PwdWithSchemeFailedParse,
 }
 
 impl core::fmt::Display for Error {
-    fn fmt(
-        &self, 
-        fmt: &mut core::fmt::Formatter
-    ) -> core::result::Result<(), core::fmt::Error> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
     }
 }

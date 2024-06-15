@@ -111,10 +111,11 @@ impl UserBmc {
         let db = mm.db();
 
         let user: UserForLogin = Self::get(ctx, mm, id).await?;
-        let pwd_enc = pwd::hash_pwd(&ContentToHash {
+        let pwd_enc = pwd::hash_pwd(ContentToHash {
             content: pwd_clear.to_string(),
             salt: user.password_salt,
-        })?;
+        })
+        .await?;
 
         // Build the SQL query
         let mut query = sea_query::Query::update();
