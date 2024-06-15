@@ -4,9 +4,9 @@ use crate::model::ModelManager;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use std::error::Error;
-use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
+use std::{env, fs};
 use tracing::info;
 
 type Db = Pool<Postgres>;
@@ -15,23 +15,35 @@ type Db = Pool<Postgres>;
 const PG_DEV_POSTGRES_URL: &str = "postgres://dev:dev@localhost:5432/dev";
 const PG_DEV_APP_URL: &str = "postgres://dev_app:dev_app@localhost:5432/dev_app";
 
-// sql file path
-const SQL_RECREATE_DB: &str = "sql/dev_initial/00-recreate-db.sql";
+// sql file path from the project root
+const SQL_RECREATE_DB: &str = "00-recreate-db.sql";
 const SQL_DIR: &str = "sql/dev_initial";
 
+// Password for demo user
 const DEMO_PWD: &str = "demo";
 
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
 
+    let current_dir = env::current_dir()?;
+    let v: Vec<_> = current_dir.components().collect();
+    let path_comp = v.get(v.len().wrapping_sub(3));
+    let base_dir = if Some(true) == path_comp.map(|c| c.as_os_str() == "crates") {
+        v[..v.len() - 3].iter().collect::<PathBuf>()
+    } else {
+        current_dir.clone()
+    };
+    let sql_dir = base_dir.join(SQL_DIR);
+
     // Create the database pool
     {
+        let sql_recreate_db_file = sql_dir.join(SQL_RECREATE_DB);
         let root_db = new_dev_db_pool(PG_DEV_POSTGRES_URL).await?;
-        p_exec(&root_db, SQL_RECREATE_DB).await?;
+        p_exec(&root_db, &sql_recreate_db_file).await?;
     }
 
     // Get sql files
-    let mut paths: Vec<PathBuf> = fs::read_dir(SQL_DIR)?
+    let mut paths: Vec<PathBuf> = fs::read_dir(sql_dir)?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .collect();
     paths.sort();
@@ -39,12 +51,10 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     // SQL Execution
     let app_db = new_dev_db_pool(PG_DEV_APP_URL).await?;
     for path in paths {
-        if let Some(path) = path.to_str() {
-            let path = path.replace('\\', "/");
+        let path_str = path.to_string_lossy();
 
-            if path.ends_with(".sql") && path != SQL_RECREATE_DB {
-                p_exec(&app_db, &path).await?;
-            }
+        if path_str.ends_with(".sql") && !path_str.ends_with(SQL_RECREATE_DB) {
+            p_exec(&app_db, &path).await?;
         }
     }
 
@@ -61,9 +71,9 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn p_exec(db: &Db, sql_file: &str) -> Result<(), sqlx::Error> {
-    info!("{:12} - p_exec - {sql_file}", "FOR-DEV_ONLY");
-    let content = fs::read_to_string(sql_file)?;
+async fn p_exec(db: &Db, file: &Path) -> Result<(), sqlx::Error> {
+    info!("{:12} - p_exec - {file:?}", "FOR-DEV_ONLY");
+    let content = fs::read_to_string(file)?;
 
     let sqls: Vec<&str> = content.split(";").collect();
 
