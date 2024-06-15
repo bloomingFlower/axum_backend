@@ -1,6 +1,6 @@
 use crate::model::store;
 use derive_more::From;
-use lib_auth::pwd_legacy;
+use lib_auth::pwd;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -20,7 +20,7 @@ pub enum Error {
     },
     // -- Modules
     #[from]
-    Pwd(pwd_legacy::Error),
+    Pwd(pwd::Error),
     #[from]
     Store(store::Error),
 

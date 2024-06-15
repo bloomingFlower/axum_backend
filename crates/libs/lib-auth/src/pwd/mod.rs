@@ -2,7 +2,9 @@ mod error;
 mod scheme;
 
 pub use self::error::{Error, Result};
-use crate::pwd::scheme::{get_scheme, SchemeStatus, DEFAULT_SCHEME};
+pub use self::scheme::SchemeStatus;
+
+use crate::pwd::scheme::{get_scheme, Scheme, DEFAULT_SCHEME};
 use lazy_regex::regex_captures;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -79,10 +81,13 @@ mod tests {
             salt: fx_salt,
         };
 
-        let pwd_hashed = hash_pwd(&fx_to_hash)?;
-        println!("--> pwd_hashed: {pwd_hashed}");
+        let pwd_hashed = hash_for_scheme("01", &fx_to_hash)?;
         let pwd_validate = validate_pwd(&fx_to_hash, &pwd_hashed)?;
-        println!("--> pwd_validate: {pwd_validate}");
+
+        assert!(
+            matches!(pwd_validate, SchemeStatus::Outdated),
+            "status should be outdated"
+        );
 
         Ok(())
     }

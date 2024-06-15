@@ -78,6 +78,7 @@ async fn _ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExtResul
 
 // region:    --- Ctx Extractor
 // CtxW is a wrapper around Ctx
+// web-server crate uses CtxW to extract the Ctx from the request parts
 #[derive(Debug, Clone)]
 pub struct CtxW(pub Ctx);
 

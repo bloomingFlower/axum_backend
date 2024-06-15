@@ -60,7 +60,7 @@ mod tests {
         };
 
         // FIXME
-        let fx_res = "b64u-encoded-hash";
+        let fx_res = "QYhiKdhKEHhV1tGwIfYMejb6nhBUMXY-n50sJSbv_Zlqq6S1s0doYHpaSP2bbD2J0zeP1d6M5gli3I-0TTSsSg";
 
         let res = hash(fx_key, &fx_to_hash)?;
 

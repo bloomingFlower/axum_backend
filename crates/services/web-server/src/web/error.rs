@@ -5,7 +5,7 @@ use crate::web;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
-use lib_auth::{pwd_legacy, token};
+use lib_auth::{pwd, token};
 use lib_core::model;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -40,7 +40,7 @@ pub enum Error {
     #[from]
     Model(model::Error),
     #[from]
-    Pwd(pwd_legacy::Error),
+    Pwd(pwd::Error),
     #[from]
     Token(token::Error),
     #[from]
