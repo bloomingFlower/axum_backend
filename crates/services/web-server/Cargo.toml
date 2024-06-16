@@ -34,11 +34,11 @@ uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 # strum_macros is a library for deriving enums from strings
 strum_macros = "0.26.4"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
+time = "0.3.36"
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error
 anyhow = "1.0.86"
 # HTTP testing utilities for Axum applications
 httpc-test = "0.1.9"
-# Serial_test is a library for serializing test output
-serial_test = "3.1.1"
+time = "0.3.36"
