@@ -155,6 +155,7 @@ kafka-console-consumer --bootstrap-server localhost:9092 --topic test
 - https://burgers.io/custom-logging-in-rust-using-tracing
 - https://strimzi.io
 - https://keda.sh/docs/2.14/scalers/apache-kafka
+- https://blog.logrocket.com/build-websocket-server-with-rust
 
 ### Why Rust
 - Secure

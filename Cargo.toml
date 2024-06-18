@@ -22,9 +22,10 @@ members = [ # Packages to include in the workspace.
 
     # -- Application Services
     "crates/services/web-server",
+    "crates/services/web-socket",
 
     # -- Tools
-    "crates/tools/gen-key", "crates/libs/lib-producer", "crates/libs/lib-consumer",
+    "crates/tools/gen-key",
 ]
 
 [profile.release]
