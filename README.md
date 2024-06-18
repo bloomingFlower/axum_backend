@@ -1,4 +1,4 @@
-`[![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
+[![Rust](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust.yml)
 [![rust-clippy analyze](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/bloomingFlower/axum_backend/actions/workflows/rust-clippy.yml)
 # Rust Web Server
 ```plaintext
@@ -71,11 +71,12 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - [ ] gRPC
 - [ ] WebSockets
 
-### Broker
+### ESP
 - [ ] Apache Kafka Cluster(Strimizi)
-  - [x] Install the Strimizi in Cluster
+- [x] Install the Strimizi in Cluster
 - [ ] KEDA(Kubernetes Event-Driven Autoscaling)
 - [ ] Add Parameters to Prometheus
+- [ ] Kafka Stream Processing (Topic -> Topic)
 
 ### Prod Code
 - apps
@@ -87,19 +88,9 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - tests
 
 ### Don't use..
-- context(..)
-- expect(..)
-- unwrap()
-
-### Refer
-- https://apihandyman.io/do-you-really-know-why-you-prefer-rest-over-rpc/#examples
-- https://dev.to/ghost/rust-project-structure-example-step-by-step-3ee
-- https://numberly.com/en/learning-rust-the-hard-way-for-a-production-kafka-scylladb-pipeline
-- https://dev.to/ciscoemerge/how-to-build-a-simple-kafka-producerconsumer-application-in-rust-3pl4
-- https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168
-- https://burgers.io/custom-logging-in-rust-using-tracing
-- https://strimzi.io
-- https://keda.sh/docs/2.14/scalers/apache-kafka
+- `context(..)`
+- `expect(..)`
+- `unwrap()`
 
 ### PWD Multi-Scheme
 - #1 HMAC (#01#)
@@ -112,3 +103,70 @@ docker exec broker \
 >                 --create \
 >                 --topic hnstories
 ```
+
+### ESP Idea
+- Source: User Activity, Metrics, Logs, Financial Transactions
+- Destination: Databases, Notification, Analytics, Data Warehouses, Data Lakes, Dashboards, Real-time Applications
+
+### Kafka CLI
+```sh
+# Create a topic
+kafka-topics --bootstrap-server localhost:9092 --create --topic test --partitions 1 --replication-factor 1
+
+# List all topics
+kafka-topics --bootstrap-server localhost:9092 --list
+
+# Describe a topic
+kafka-topics --bootstrap-server localhost:9092 --describe --topic test
+
+# Delete a topic
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test
+
+# Produce a message to a topic, without key
+kafka-console-producer --broker-list localhost:9092 --topic test
+> Hello, World!
+> This is a message
+> ^D
+
+# Produce a message to a topic, with key
+kafka-console-producer --broker-list localhost:9092 --topic test --property parse.key=true --property key.separator=:
+> user1: Login Event
+> user1: Click Event
+> user1: Logout Event
+
+# Consume messages from a topic, offset from beginning
+kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
+> (offset 0) log1
+> (offset 1) log2
+
+# Consume messages from a topic, offset 1
+kafka-console-consumer --bootstrap-server localhost:9092 --topic test
+> (offset 2) log3
+> (offset 3) log4
+```
+
+
+### Refer
+- https://apihandyman.io/do-you-really-know-why-you-prefer-rest-over-rpc/#examples
+- https://dev.to/ghost/rust-project-structure-example-step-by-step-3ee
+- https://numberly.com/en/learning-rust-the-hard-way-for-a-production-kafka-scylladb-pipeline
+- https://dev.to/ciscoemerge/how-to-build-a-simple-kafka-producerconsumer-application-in-rust-3pl4
+- https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168
+- https://burgers.io/custom-logging-in-rust-using-tracing
+- https://strimzi.io
+- https://keda.sh/docs/2.14/scalers/apache-kafka
+
+### Why Rust
+- Secure
+  - Memory and thead safety
+  - No runtime or garbage collector
+- Easy to deploy
+  - Small sized binaries are self-sufficient
+  - No runtime dependencies
+- No compromises
+  - Strongly and statically typed
+  - Exhaustive checking
+  - Built-in error management syntax and primitives
+- Play well with others
+  - C, C++, Python, Node.js, Java, Ruby, Go, etc.
+  - PyO3 can be used to run Rust from Python (or vice versa)
