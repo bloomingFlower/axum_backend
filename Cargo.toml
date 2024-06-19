@@ -26,6 +26,9 @@ members = [ # Packages to include in the workspace.
 
     # -- Tools
     "crates/tools/gen-key",
+
+    # -- Test
+    "crates/services/scylla-test",
 ]
 
 [profile.release]

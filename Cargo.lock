@@ -2192,6 +2192,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "scylla-test"
+version = "0.1.0"
+
+[[package]]
 name = "sdd"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
