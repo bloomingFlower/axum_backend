@@ -14,7 +14,7 @@ mod temperature_measurement;
 async fn main() -> Result<()> {
     let username = std::env::var("SCYLLA_USERNAME").expect("SCYLLA_USERNAME must be set");
     let password = std::env::var("SCYLLA_PASSWORD").expect("SCYLLA_PASSWORD must be set");
-    let uri = std::env::var("SCYLLA_URI").unwrap_or_else(|_| "127.0.0.1:9042".to_string());
+    let uri = std::env::var("SCYLLA_DB_URL").unwrap_or_else(|_| "127.0.0.1:9042".to_string());
     println!("connecting to db at {} with username {}", uri, username);
     // Create a ScyllaDB session with authentication
     let session = SessionBuilder::new()
