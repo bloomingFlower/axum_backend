@@ -16,7 +16,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     // -- Modules
     #[from]
-    Model(model::Error),
+    Model(model::psql::Error),
 }
 
 impl core::fmt::Display for Error {

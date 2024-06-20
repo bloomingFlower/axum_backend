@@ -2,8 +2,8 @@ use crate::params::ParamsList;
 use crate::Result;
 use crate::{ParamsForCreate, ParamsForUpdate, ParamsIded};
 use lib_core::ctx::Ctx;
-use lib_core::model::task::{Task, TaskBmc, TaskFilter, TaskForCreate, TaskForUpdate};
-use lib_core::model::ModelManager;
+use lib_core::model::psql::task::{Task, TaskBmc, TaskFilter, TaskForCreate, TaskForUpdate};
+use lib_core::model::psql::ModelManager;
 
 /// Create a task with the given data
 pub async fn create_task(
@@ -49,11 +49,7 @@ pub async fn update_task(
 }
 
 /// Delete a task with the given id
-pub async fn delete_task(
-    ctx: Ctx, 
-    mm: ModelManager, 
-    params: ParamsIded
-) -> Result<Task> {
+pub async fn delete_task(ctx: Ctx, mm: ModelManager, params: ParamsIded) -> Result<Task> {
     let ParamsIded { id } = params;
     let task = TaskBmc::get(&ctx, &mm, id).await?;
     TaskBmc::delete(&ctx, &mm, id).await?;

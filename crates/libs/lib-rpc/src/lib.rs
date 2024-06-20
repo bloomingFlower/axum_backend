@@ -6,7 +6,7 @@ pub use self::error::{Error, Result};
 use params::*;
 
 use lib_core::ctx::Ctx;
-use lib_core::model::ModelManager;
+use lib_core::model::psql::ModelManager;
 use serde::Deserialize;
 use serde_json::{from_value, to_value, Value};
 use task_rpc::{create_task, delete_task, list_tasks, update_task};

@@ -1,6 +1,6 @@
 use crate::ctx::Ctx;
-use crate::model::base::{self, DbBmc};
-use crate::model::{ModelManager, Result};
+use crate::model::psql::base::{self, DbBmc};
+use crate::model::psql::{ModelManager, Result};
 use lib_auth::pwd::{self, ContentToHash};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, SimpleExpr};

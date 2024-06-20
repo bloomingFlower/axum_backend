@@ -1,7 +1,7 @@
 use crate::ctx::Ctx;
-use crate::model::base::DbBmc;
-use crate::model::Result;
-use crate::model::{base, ModelManager};
+use crate::model::psql::base::DbBmc;
+use crate::model::psql::Result;
+use crate::model::psql::{base, ModelManager};
 use modql::field::Fields;
 use modql::filter::{FilterNodes, ListOptions, OpValsBool, OpValsInt64, OpValsString};
 use serde::{Deserialize, Serialize};
@@ -79,7 +79,7 @@ impl TaskBmc {
 mod tests {
     use super::*;
     use crate::_dev_utils;
-    use crate::model::Error;
+    use crate::model::psql::Error;
     use anyhow::Result;
     use serde_json::json;
     use serial_test::serial;

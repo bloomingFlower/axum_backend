@@ -38,7 +38,7 @@ pub enum Error {
 
     // -- Modules
     #[from]
-    Model(model::Error),
+    Model(model::psql::Error),
     #[from]
     Pwd(pwd::Error),
     #[from]
@@ -92,7 +92,7 @@ impl Error {
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
             // -- Model
-            Model(model::Error::EntityNotFound { entity, id }) => (
+            Model(model::psql::Error::EntityNotFound { entity, id }) => (
                 StatusCode::BAD_REQUEST,
                 ClientError::ENTITY_NOT_FOUND { entity, id: *id },
             ),

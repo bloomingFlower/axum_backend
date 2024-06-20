@@ -1,7 +1,7 @@
 use crate::ctx::Ctx;
-use crate::model::error::Error;
-use crate::model::ModelManager;
-use crate::model::Result;
+use crate::model::psql::error::Error;
+use crate::model::psql::ModelManager;
+use crate::model::psql::Result;
 use modql::field::HasFields;
 use modql::filter::{FilterGroups, ListOptions};
 use modql::SIden;

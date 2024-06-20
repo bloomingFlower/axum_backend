@@ -1,4 +1,4 @@
-use crate::model::store;
+use crate::model::psql::store;
 use derive_more::From;
 use lib_auth::pwd;
 use serde::Serialize;

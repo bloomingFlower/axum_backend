@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
 use lib_core::ctx::Ctx;
-use lib_core::model::ModelManager;
+use lib_core::model::psql::ModelManager;
 use lib_rpc::{exec_rpc, RpcRequest};
 use serde_json::{json, Value};
 use std::sync::Arc;

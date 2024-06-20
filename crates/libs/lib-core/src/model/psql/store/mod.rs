@@ -17,7 +17,7 @@ pub async fn new_db_pool() -> Result<Db> {
     PgPoolOptions::new()
         .max_connections(max_connections)
         .acquire_timeout(Duration::from_millis(500))
-        .connect(&core_config().DB_URL)
+        .connect(&core_config().PSQL_DB_URL)
         .await
         .map_err(|e| Error::FailToCreatePool(e.to_string()))
 }

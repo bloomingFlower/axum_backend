@@ -16,7 +16,11 @@ RUST_LOG="web_server=debug,lib_core=debug,lib_auth=debug,lib_utils=debug"
 # Keys and passwords below are for local development only.
 # i.e., Encryption not required.
 
-SERVICE_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
+SERVICE_POSTGRESQL_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
+
+SERVICE_SCYLLA_DB_URL = "localhost:9042"
+SERVICE_SCYLLA_DB_USER = "cassandra"
+SERVICE_SCYLLA_DB_PASSWORD = "cassandra"
 
 SERVICE_PWD_KEY = "uY4ZWS0Ge-3E-qUC5VnKr0DMmy2YFkng1zHW0iAF2kNyXtctjF9dGdBmdj9jMkwJiBUzNl533lnTVq7DkqOUdA"
 

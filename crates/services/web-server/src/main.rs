@@ -13,7 +13,7 @@ use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
 use crate::web::{routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
-use lib_core::model::ModelManager;
+use lib_core::model::psql::ModelManager;
 
 use axum::{middleware, Router};
 use lib_core::_dev_utils;
@@ -38,16 +38,20 @@ async fn main() -> Result<()> {
 
     // Spawn a new task for producing messages to Kafka
     let producer_task = tokio::spawn(async {
-        lib_producer::produce().await.expect("Fail to produce message");
+        lib_producer::produce()
+            .await
+            .expect("Fail to produce message");
     });
-    
+
     // Spawn a new task for consuming messages from Kafka
     let consumer_task = tokio::spawn(async {
         sleep(Duration::from_secs(5)).await;
         // lib_consumer::consume().await;
-        lib_consumer::list_topics().await.expect("Fail to consume message");
+        lib_consumer::list_topics()
+            .await
+            .expect("Fail to consume message");
     });
-    
+
     // Wait for both tasks to complete
     // let _ = tokio::try_join!(producer_task, consumer_task);
 

@@ -3,8 +3,9 @@
 mod dev_db;
 
 use crate::ctx::Ctx;
-use crate::model::task::{Task, TaskBmc, TaskForCreate};
-use crate::model::{self, ModelManager};
+use crate::model;
+use crate::model::psql::task::{Task, TaskBmc, TaskForCreate};
+use crate::model::psql::{self, ModelManager};
 use tokio::sync::OnceCell;
 use tracing::info;
 
@@ -42,7 +43,11 @@ pub async fn init_test() -> ModelManager {
 }
 
 /// Seed tasks for testing.
-pub async fn seed_tasks(ctx: &Ctx, mm: &ModelManager, titles: &[&str]) -> model::Result<Vec<Task>> {
+pub async fn seed_tasks(
+    ctx: &Ctx,
+    mm: &ModelManager,
+    titles: &[&str],
+) -> model::psql::Result<Vec<Task>> {
     let mut tasks = Vec::new();
 
     for title in titles {

@@ -18,7 +18,7 @@ pub enum Error {
 
     // -- Modules
     #[from]
-    Model(model::Error),
+    Model(model::psql::Error),
 
     // -- External Modules
     #[from]
@@ -26,10 +26,7 @@ pub enum Error {
 }
 
 impl core::fmt::Display for Error {
-    fn fmt(
-        &self, 
-        fmt: &mut core::fmt::Formatter
-    ) -> core::result::Result<(), core::fmt::Error> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
         write!(fmt, "{self:?}")
     }
 }
