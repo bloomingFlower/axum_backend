@@ -7,6 +7,11 @@ description.workspace = true
 documentation.workspace = true
 
 [dependencies]
+uuid = {version = "0.8", features = ["v4"]}
+tokio = {version = "1.1.0", features = ["full"]}
+scylla = "0.3.1"
+futures = "0.3.6"
+chrono = "0.4.0"
 
 [lints]
 workspace = true

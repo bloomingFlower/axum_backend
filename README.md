@@ -145,6 +145,11 @@ kafka-console-consumer --bootstrap-server localhost:9092 --topic test
 > (offset 3) log4
 ```
 
+### ScyllaDB CLI
+```sh
+sudo docker run -d --name Node_X -p 9042:9042 -p 7000:7000 scylladb/scylla:latest
+sudo docker exec -it Node_X cqlsh
+```
 
 ### Refer
 - https://apihandyman.io/do-you-really-know-why-you-prefer-rest-over-rpc/#examples
