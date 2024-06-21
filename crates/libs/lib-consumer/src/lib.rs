@@ -6,6 +6,9 @@ use rdkafka::metadata::Metadata;
 use rdkafka::Message;
 use std::time::Duration;
 
+use lib_core::model::scylla::hnstory::{add_hnstory, HNStory};
+use lib_core::model::scylla::{db_conn, hnstory};
+
 pub fn create_consumer() -> KafkaResult<StreamConsumer> {
     ClientConfig::new()
         .set("bootstrap.servers", "localhost:9092")
@@ -33,6 +36,8 @@ pub async fn consume() {
         println!("  - {}", topic.topic());
     }
 
+    let session = db_conn().await.expect("Failed to create ScyllaDB session");
+
     loop {
         match consumer.recv().await {
             Err(e) => println!("Kafka error: {}", e),
@@ -47,6 +52,18 @@ pub async fn consume() {
                 };
                 println!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
                          m.key(), payload, m.topic(), m.partition(), m.offset(), m.timestamp());
+                if !payload.is_empty() {
+                    println!("payload: {}", payload);
+                    match serde_json::from_str::<HNStory>(&payload) {
+                        Ok(hnstory) => {
+                            if let Err(e) = add_hnstory(&session, hnstory).await {
+                                println!("Failed to add hnstory: {}", e);
+                            }
+                        }
+                        Err(e) => println!("Failed to parse hnstory from payload: {}", e),
+                    }
+                }
+
                 if let Some(headers) = m.headers() {
                     for header in headers.iter() {
                         println!("  Header {:#?}: {:?}", header.key, header.value);

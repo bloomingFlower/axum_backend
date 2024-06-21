@@ -1303,8 +1303,10 @@ name = "lib-consumer"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "lib-core",
  "log",
  "rdkafka",
+ "serde_json",
  "tracing",
  "tracing-subscriber",
 ]

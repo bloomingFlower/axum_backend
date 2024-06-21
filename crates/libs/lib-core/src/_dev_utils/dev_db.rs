@@ -17,7 +17,7 @@ const PG_DEV_APP_URL: &str = "postgres://dev_app:dev_app@localhost:5432/dev_app"
 
 // sql file path from the project root
 const SQL_RECREATE_DB: &str = "00-recreate-db.sql";
-const SQL_DIR: &str = "sql/dev_initial";
+const SQL_DIR: &str = "sql/psql/dev_initial";
 
 // Password for demo user
 const DEMO_PWD: &str = "demo";
