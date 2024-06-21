@@ -1,7 +1,7 @@
-mod db;
+mod hnstory;
 mod error;
-mod hn_news;
 mod result;
+mod base;
 
 use crate::model::scylla::result::Result;
 use scylla::SessionBuilder;
@@ -20,7 +20,7 @@ pub async fn db_conn() -> Result<()> {
         .build()
         .await?;
 
-    db::initialize(&session).await?;
+    hnstory::initialize(&session).await?;
 
     Ok(())
 }

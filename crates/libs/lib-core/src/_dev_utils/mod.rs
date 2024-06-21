@@ -5,7 +5,7 @@ mod dev_db;
 use crate::ctx::Ctx;
 use crate::model;
 use crate::model::psql::task::{Task, TaskBmc, TaskForCreate};
-use crate::model::psql::{self, ModelManager};
+use crate::model::psql::ModelManager;
 use tokio::sync::OnceCell;
 use tracing::info;
 

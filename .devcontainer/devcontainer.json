@@ -1,13 +1,22 @@
 {
   "name": "Rust",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      // Use the VARIANT arg to pick a Debian OS version: bullseye for newer environments
+      "VARIANT": "bullseye"
+    }
+  },
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash",
         "lldb.executable": "/usr/bin/lldb",
+        // VS Code does not watch files under ./target
         "files.watcherExclude": {
           "**/target/**": true
         },
@@ -25,5 +34,6 @@
       ]
     }
   },
+  "postCreateCommand": "rustup component add rustfmt clippy",
   "remoteUser": "vscode"
 }
