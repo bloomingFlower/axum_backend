@@ -1304,6 +1304,7 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "lib-core",
+ "lib-utils",
  "log",
  "rdkafka",
  "serde_json",

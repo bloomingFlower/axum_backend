@@ -1,3 +1,5 @@
+mod config;
+
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
 use rdkafka::error::KafkaResult;
@@ -5,13 +7,17 @@ use rdkafka::message::Headers; // for the `next` method
 use rdkafka::metadata::Metadata;
 use rdkafka::Message;
 use std::time::Duration;
+use tracing::{debug, error, info};
 
+use lib_core::model::scylla::db_conn;
 use lib_core::model::scylla::hnstory::{add_hnstory, HNStory};
-use lib_core::model::scylla::{db_conn, hnstory};
 
 pub fn create_consumer() -> KafkaResult<StreamConsumer> {
     ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set(
+            "bootstrap.servers",
+            &config::consume_config().BOOTSTRAP_SERVER_URL,
+        )
         .set("group.id", "hnstories_group")
         .set("enable.partition.eof", "false")
         .set("enable.auto.commit", "true")
@@ -23,7 +29,7 @@ pub fn create_consumer() -> KafkaResult<StreamConsumer> {
 }
 
 pub async fn consume() {
-    println!("Start Kafka consume");
+    info!("Start Kafka consume");
     let consumer: StreamConsumer = create_consumer().expect("Consumer creation failed");
 
     consumer
@@ -31,42 +37,43 @@ pub async fn consume() {
         .expect("Can't subscribe to specified topics");
 
     let subscription = consumer.subscription().expect("Failed to get subscription");
-    println!("Subscribed to the following topics:");
+    info!("Subscribed to the following topics:");
     for topic in subscription.elements() {
         println!("  - {}", topic.topic());
     }
 
+    // Create a ScyllaDB session
     let session = db_conn().await.expect("Failed to create ScyllaDB session");
 
     loop {
         match consumer.recv().await {
-            Err(e) => println!("Kafka error: {}", e),
+            Err(e) => error!("Kafka error: {}", e),
             Ok(m) => {
                 let payload = match m.payload_view::<str>() {
                     None => "",
                     Some(Ok(s)) => s,
                     Some(Err(e)) => {
-                        println!("Error while deserializing message payload: {:?}", e);
+                        error!("Error while deserializing message payload: {:?}", e);
                         ""
                     }
                 };
-                println!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
+                debug!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
                          m.key(), payload, m.topic(), m.partition(), m.offset(), m.timestamp());
                 if !payload.is_empty() {
-                    println!("payload: {}", payload);
+                    debug!("payload: {}", payload);
                     match serde_json::from_str::<HNStory>(&payload) {
                         Ok(hnstory) => {
                             if let Err(e) = add_hnstory(&session, hnstory).await {
-                                println!("Failed to add hnstory: {}", e);
+                                error!("Failed to add hnstory: {}", e);
                             }
                         }
-                        Err(e) => println!("Failed to parse hnstory from payload: {}", e),
+                        Err(e) => error!("Failed to parse hnstory from payload: {}", e),
                     }
                 }
 
                 if let Some(headers) = m.headers() {
                     for header in headers.iter() {
-                        println!("  Header {:#?}: {:?}", header.key, header.value);
+                        info!("  Header {:#?}: {:?}", header.key, header.value);
                     }
                 }
                 consumer.commit_message(&m, CommitMode::Async).unwrap();
@@ -80,10 +87,10 @@ pub async fn list_topics() -> KafkaResult<()> {
 
     let metadata: Metadata = consumer.fetch_metadata(None, Some(Duration::from_secs(5)))?;
 
-    println!("list of topic size: {}", metadata.topics().len());
+    info!("list of topic size: {}", metadata.topics().len());
 
     for topic in metadata.topics() {
-        println!("topic name: {}", topic.name());
+        info!("topic name: {}", topic.name());
     }
 
     consume().await;

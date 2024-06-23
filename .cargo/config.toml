@@ -6,7 +6,7 @@
 
 # Scope down tracing, to filter out external lib tracing.
 # RUST_LOG="axum_backend=debug"
-RUST_LOG="web_server=debug,lib_core=debug,lib_auth=debug,lib_utils=debug"
+RUST_LOG="web_server=debug,lib_core=debug,lib_auth=debug,lib_utils=debug,lib_consumer=debug,lib_producer=debug"
 
 # Service Environment variables.
 # IMPORTANT: These are only used for the `cargo run` command.
@@ -18,7 +18,7 @@ RUST_LOG="web_server=debug,lib_core=debug,lib_auth=debug,lib_utils=debug"
 
 SERVICE_POSTGRESQL_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
 
-SERVICE_SCYLLA_DB_URL = "localhost:9042"
+SERVICE_SCYLLA_DB_URL = "127.0.0.1:9042"
 SERVICE_SCYLLA_DB_USER = "cassandra"
 SERVICE_SCYLLA_DB_PASSWORD = "cassandra"
 
@@ -28,6 +28,7 @@ SERVICE_TOKEN_KEY= "KnPH2IsuLL1eT-bRF4fQnQ5MU9c162sVZqtde2DqCHJDmzVaEwBNG-57MOLW
 
 SERVICE_TOKEN_DURATION_SEC="1800"
 
+SERVICE_BOOTSTRAP_SERVER_URL="127.0.0.1:9092"
 ## ConfigMap
 
 # This will be relative to Cargo.toml file.

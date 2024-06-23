@@ -3,3 +3,4 @@
 axum_backend.iml
 .idea
 vcs.xml
+/.cargo/

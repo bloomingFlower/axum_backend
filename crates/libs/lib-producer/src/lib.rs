@@ -5,6 +5,7 @@ use rdkafka::config::ClientConfig;
 use rdkafka::error::{KafkaError, KafkaResult};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use std::time::Duration;
+use tracing::{debug, error, info};
 
 fn create_producer(host: &str) -> KafkaResult<FutureProducer> {
     ClientConfig::new().set("bootstrap.servers", host).create()
@@ -21,7 +22,7 @@ async fn send_to_kafka(
         let buffer = match serde_json::to_string(&search_result) {
             Ok(b) => b,
             Err(e) => {
-                println!("Serialization error: {:?}", e);
+                error!("Serialization error: {:?}", e);
                 continue;
             }
         };
@@ -33,8 +34,8 @@ async fn send_to_kafka(
             .await;
 
         match delivery_status {
-            Ok(delivery) => println!("Sent: {:?}", delivery),
-            Err((err, _)) => println!("Error: {:?}", err),
+            Ok(delivery) => debug!("Sent: {:?}", delivery),
+            Err((err, _)) => error!("Error: {:?}", err),
         }
     }
 
@@ -43,7 +44,7 @@ async fn send_to_kafka(
 
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
     let stories = hn::fetch_hn_stories("Rust".into(), 100).await?;
-    println!("Fetched {} stories", stories.hits.len());
+    info!("Fetched {} stories", stories.hits.len());
     send_to_kafka("localhost:9092", "hnstories", stories.hits).await?;
 
     Ok(())
