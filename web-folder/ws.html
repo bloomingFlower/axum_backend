@@ -1,18 +1,37 @@
 <!DOCTYPE html>
-<html>
-<body>
-<script>
-    window.onload = () => {
-        const BACKEND_URL = "wss://" + window.location.hostname + ":3030/echo"
-        const socket = new WebSocket(BACKEND_URL)
-        socket.onopen = () =>  {
-            console.log("Socket Opened")
-            setInterval(_ => socket.send("Hello rust!"), 3000)
+<html lang="kr">
+<head>
+    <title>WebSocket Test</title>
+    <script>
+        window.onload = function() {
+            let ws = new WebSocket('ws://localhost:3001/send');
+
+            ws.onopen = function() {
+                console.log('Connection opened');
+            }
+
+            ws.onmessage = function(event) {
+                let messageList = document.getElementById('messages');
+                let newMessage = document.createElement('li');
+                newMessage.textContent = 'Received: ' + event.data;
+                messageList.appendChild(newMessage);
+            }
+
+            let form = document.getElementById('form');
+            form.onsubmit = function(event) {
+                event.preventDefault();
+                let input = document.getElementById('message');
+                ws.send(input.value);
+                input.value = '';
+            }
         }
-        socket.onmessage = (msg) => alert(msg.data)
-        socket.onerror = (err) => console.error(err)
-        socket.onclose = () => console.log("Socket Closed")
-    }
-</script>
+    </script>
+</head>
+<body>
+<form id="form">
+    <label for="message"></label><input type="text" id="message">
+    <input type="submit" value="Send">
+</form>
+<ul id="messages"></ul>
 </body>
 </html>

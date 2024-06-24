@@ -62,7 +62,7 @@ ALTER DATABASE postgres SET log_statement = 'all';
 ## Future Work
 ### Database
 - [x] ORM (sqlb > sea-query)
-- [ ] ScyllaDB
+- [x] ScyllaDB
 
 ### Protocols
 - [x] REST

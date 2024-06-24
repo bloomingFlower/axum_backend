@@ -5,6 +5,7 @@ use rdkafka::config::ClientConfig;
 use rdkafka::error::{KafkaError, KafkaResult};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use std::time::Duration;
+use tokio::time::interval;
 use tracing::{debug, error, info};
 
 fn create_producer(host: &str) -> KafkaResult<FutureProducer> {
@@ -28,7 +29,9 @@ async fn send_to_kafka(
         };
         let delivery_status = producer
             .send(
-                FutureRecord::to(topic).payload(&buffer).key("some_key"),
+                FutureRecord::to(topic)
+                    .payload(&buffer)
+                    .key(&search_result.id),
                 Duration::from_secs(10),
             )
             .await;
@@ -43,9 +46,13 @@ async fn send_to_kafka(
 }
 
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
-    let stories = hn::fetch_hn_stories("Rust".into(), 100).await?;
-    info!("Fetched {} stories", stories.hits.len());
-    send_to_kafka("localhost:9092", "hnstories", stories.hits).await?;
+    let mut interval = interval(Duration::from_secs(60)); // 60초마다 실행
 
+    loop {
+        interval.tick().await;
+        let stories = hn::fetch_hn_stories("Rust".into(), 100).await.unwrap();
+        info!("Fetched {} stories", stories.hits.len());
+        send_to_kafka("localhost:9092", "hnstories", stories.hits).await?;
+    }
     Ok(())
 }

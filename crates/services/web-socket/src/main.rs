@@ -7,6 +7,8 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use tokio::net::TcpListener;
+use tracing::debug;
+use tracing_subscriber::EnvFilter;
 
 use consume::consume_msg;
 
@@ -18,7 +20,7 @@ async fn handle_socket(mut socket: WebSocket) {
     while let Some(Ok(msg)) = socket.recv().await {
         match msg {
             Message::Text(text) => {
-                println!("Received: {}", text);
+                debug!("Received: {}", text);
                 let formatted_response = format!("Echo: {}", text);
                 socket
                     .send(Message::Text(formatted_response))
@@ -26,7 +28,7 @@ async fn handle_socket(mut socket: WebSocket) {
                     .unwrap();
             }
             Message::Close(_) => {
-                println!("Connection closed");
+                debug!("Connection closed");
                 break;
             }
             _ => {}
@@ -36,6 +38,11 @@ async fn handle_socket(mut socket: WebSocket) {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt() // For standard output
+        .without_time() // For local development(simplicity)
+        .with_target(false) // For local development(simplicity)
+        .with_env_filter(EnvFilter::from_default_env()) // set log level(config.toml)
+        .init();
     // let (tx, _) = tokio::sync::broadcast::channel(10);
     // tokio::spawn(async move { consume_msg(tx).await });
     let app = Router::new().route("/send", get(ws_handler));

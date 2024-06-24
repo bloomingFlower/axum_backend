@@ -60,7 +60,6 @@ pub async fn consume() {
                 debug!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
                          m.key(), payload, m.topic(), m.partition(), m.offset(), m.timestamp());
                 if !payload.is_empty() {
-                    debug!("payload: {}", payload);
                     match serde_json::from_str::<HNStory>(&payload) {
                         Ok(hnstory) => {
                             if let Err(e) = add_hnstory(&session, hnstory).await {
