@@ -18,6 +18,7 @@ use lib_core::model::psql::ModelManager;
 use axum::{middleware, Router};
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
+use tokio::signal;
 use tokio::time::{sleep, Duration};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
@@ -90,13 +91,40 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     info!("Listening on {}", listener.local_addr().unwrap());
     // Start the server and handle errors gracefully
-    if let Err(err) = axum::serve(listener, routes_all.into_make_service()).await {
+    if let Err(err) = axum::serve(listener, routes_all.into_make_service())
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+    {
         eprintln!("Server error: {}", err);
     }
 
     // endregion: End the server
     // Return Ok if everything went well
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 // //region Hello Routes

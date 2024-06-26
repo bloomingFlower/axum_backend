@@ -67,9 +67,10 @@ ALTER DATABASE postgres SET log_statement = 'all';
 ### Protocols
 - [x] REST
 - [x] JSON-RPC 2.0
-- [ ] GraphQL
 - [ ] gRPC
-- [ ] WebSockets
+- [ ] SSE
+- [x] WebSockets
+- [ ] GraphQL
 
 ### ESP
 - [ ] Apache Kafka Cluster(Strimizi)
@@ -156,7 +157,7 @@ sudo docker exec -it Node_X cqlsh
 - https://dev.to/ghost/rust-project-structure-example-step-by-step-3ee
 - https://numberly.com/en/learning-rust-the-hard-way-for-a-production-kafka-scylladb-pipeline
 - https://dev.to/ciscoemerge/how-to-build-a-simple-kafka-producerconsumer-application-in-rust-3pl4
-- https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168
+- https://dev.to/ciscoemerge/how-to-build-a-kafka-producer-in-rust-with-partitioning-3168 [ ]
 - https://burgers.io/custom-logging-in-rust-using-tracing
 - https://strimzi.io
 - https://keda.sh/docs/2.14/scalers/apache-kafka

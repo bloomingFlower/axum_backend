@@ -31,7 +31,8 @@ async fn send_to_kafka(
             .send(
                 FutureRecord::to(topic)
                     .payload(&buffer)
-                    .key(&search_result.id),
+                    // key is optional, but it helps Kafka to keep messages with the same key in the same partition
+                    .key("Rust"),
                 Duration::from_secs(10),
             )
             .await;
@@ -46,13 +47,16 @@ async fn send_to_kafka(
 }
 
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
-    let mut interval = interval(Duration::from_secs(60)); // 60초마다 실행
+    // Fetch Hacker News stories every 60 seconds
+    let mut interval = interval(Duration::from_secs(60));
+    let max_iterations = 10;
 
-    loop {
+    for _ in 0..max_iterations {
         interval.tick().await;
-        let stories = hn::fetch_hn_stories("Rust".into(), 100).await.unwrap();
+        let stories = hn::fetch_hn_stories("Rust".into(), 100).await?;
         info!("Fetched {} stories", stories.hits.len());
         send_to_kafka("localhost:9092", "hnstories", stories.hits).await?;
     }
+
     Ok(())
 }
