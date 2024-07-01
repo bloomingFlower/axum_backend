@@ -8,6 +8,7 @@ use futures::stream::{self, Stream};
 use std::{convert::Infallible, path::PathBuf, time::Duration};
 use tokio_stream::StreamExt as _;
 use tower_http::{services::ServeDir, trace::TraceLayer};
+use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -27,7 +28,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -44,15 +45,18 @@ fn app() -> Router {
 async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    println!("`{}` connected", user_agent.as_str());
+    info!("`{}` connected", user_agent.as_str());
 
     // A `Stream` that repeats an event every second
-    //
-    // You can also create streams from tokio channels using the wrappers in
-    // https://docs.rs/tokio-stream
-    let stream = stream::repeat_with(|| Event::default().data("hi!"))
-        .map(Ok)
-        .throttle(Duration::from_secs(1));
+    let stream = stream::repeat_with(|| {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        Event::default().data(format!("hi! Time: {}", now))
+    })
+    .map(Ok)
+    .throttle(Duration::from_secs(1));
 
     Sse::new(stream).keep_alive(
         axum::response::sse::KeepAlive::new()

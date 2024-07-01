@@ -6,7 +6,7 @@
 
 # Scope down tracing, to filter out external lib tracing.
 # RUST_LOG="axum_backend=debug"
-RUST_LOG = "web_server=debug,web_socket=debug,see_service=debug,lib_core=debug,lib_auth=debug,lib_utils=debug,lib_consumer=debug,lib_producer=debug"
+RUST_LOG = "web_server=debug,web_socket=debug,sse_service=debug,lib_core=debug,lib_auth=debug,lib_utils=debug,lib_consumer=debug,lib_producer=debug"
 
 # Service Environment variables.
 # IMPORTANT: These are only used for the `cargo run` command.
