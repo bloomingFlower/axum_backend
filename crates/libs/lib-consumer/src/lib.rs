@@ -28,12 +28,14 @@ pub fn create_consumer() -> KafkaResult<StreamConsumer> {
         .create()
 }
 
-pub async fn consume() {
-    info!("Start Kafka consume");
+pub async fn consume(topic_name: &str) {
+    info!("Start Kafka consume for topics: {:?}", topic_name);
     let consumer: StreamConsumer = create_consumer().expect("Consumer creation failed");
 
+    let topics = vec![topic_name];
+
     consumer
-        .subscribe(&["hnstories"])
+        .subscribe(&topics.as_slice())
         .expect("Can't subscribe to specified topics");
 
     let subscription = consumer.subscription().expect("Failed to get subscription");
@@ -57,18 +59,31 @@ pub async fn consume() {
                         ""
                     }
                 };
-                debug!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
-                         m.key(), payload, m.topic(), m.partition(), m.offset(), m.timestamp());
-                if !payload.is_empty() {
-                    match serde_json::from_str::<HNStory>(&payload) {
-                        Ok(hnstory) => {
-                            if let Err(e) = add_hnstory(&session, hnstory).await {
-                                error!("Failed to add hnstory: {}", e);
-                            }
-                        }
-                        Err(e) => error!("Failed to parse hnstory from payload: {}", e),
-                    }
-                }
+                debug!(
+                    "Received message:\n\
+                     Key: {:?}\n\
+                     Payload: {}\n\
+                     Topic: {}\n\
+                     Partition: {}\n\
+                     Offset: {}\n\
+                     Timestamp: {:?}",
+                    m.key(),
+                    payload,
+                    m.topic(),
+                    m.partition(),
+                    m.offset(),
+                    m.timestamp()
+                );
+                // if !payload.is_empty() {
+                //     match serde_json::from_str::<HNStory>(&payload) {
+                //         Ok(hnstory) => {
+                //             if let Err(e) = add_hnstory(&session, hnstory).await {
+                //                 error!("Failed to add {}: {}", m.topic(), e);
+                //             }
+                //         }
+                //         Err(e) => error!("Failed to parse hnstory from payload: {}", e),
+                //     }
+                // }
 
                 if let Some(headers) = m.headers() {
                     for header in headers.iter() {
@@ -92,7 +107,7 @@ pub async fn list_topics() -> KafkaResult<()> {
         info!("topic name: {}", topic.name());
     }
 
-    consume().await;
+    consume("hnstories").await;
 
     Ok(())
 }

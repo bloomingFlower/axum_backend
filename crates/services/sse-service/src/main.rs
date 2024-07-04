@@ -8,8 +8,14 @@ use futures::stream::{self, Stream};
 use std::{convert::Infallible, path::PathBuf, time::Duration};
 use tokio_stream::StreamExt as _;
 use tower_http::{services::ServeDir, trace::TraceLayer};
+use std::sync::Arc;
+use tokio::sync::broadcast;
 use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use lib_producer::produce_bitcoin_info;
+use lib_producer::token::BitcoinInfo;
+use lib_consumer::consume;
+
 
 #[tokio::main]
 async fn main() {
@@ -21,8 +27,24 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // build our application
-    let app = app();
+    let bitcoin_info = produce_bitcoin_info().await;
+    info!("Bitcoin info: {:?}", bitcoin_info);
+
+    // Create a broadcast channel
+    let (tx, _) = broadcast::channel::<BitcoinInfo>(100);
+    let tx = Arc::new(tx);
+
+    let tx_clone = tx.clone();
+    tokio::spawn(async move {
+        let mut stream = consume("token").await;
+        while let Some(message) = stream.next().await {
+        if let Ok(bitcoin_info) = parse_bitcoin_info(message) {
+                let _ = tx_clone.send(bitcoin_info);
+            }
+        }
+    });
+
+    let app = app(tx);
 
     // run it
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -32,31 +54,39 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-fn app() -> Router {
+fn parse_bitcoin_info(message: String) -> Result<BitcoinInfo, Box<dyn std::error::Error>> {
+    // 메시지를 BitcoinInfo 구조체로 파싱
+    let bitcoin_info: BitcoinInfo = serde_json::from_str(&message)?;
+    Ok(bitcoin_info)
+}
+
+fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
-    // build our application with a route
+    // build application with a route
     Router::new()
         .fallback_service(static_files_service)
-        .route("/sse", get(sse_handler))
+        .route("/sse", get(move |user_agent| sse_handler(user_agent, tx.clone())))
         .layer(TraceLayer::new_for_http())
 }
 
 async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
+    tx: Arc<broadcast::Sender<BitcoinInfo>>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     info!("`{}` connected", user_agent.as_str());
 
-    // A `Stream` that repeats an event every second
-    let stream = stream::repeat_with(|| {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        Event::default().data(format!("hi! Time: {}", now))
-    })
-    .map(Ok)
-    .throttle(Duration::from_secs(1));
+    let mut rx = tx.subscribe();
+
+    let stream = stream::unfold((), move |_| async move {
+        match rx.recv().await {
+            Ok(bitcoin_info) => {
+                let event = Event::default().data(format!("Bitcoin Price: {}", bitcoin_info.current_price));
+                Some((Ok(event), ()))
+            }
+            Err(_) => None,
+        }
+    });
 
     Sse::new(stream).keep_alive(
         axum::response::sse::KeepAlive::new()

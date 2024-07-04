@@ -47,10 +47,10 @@ async fn main() -> Result<()> {
     // Spawn a new task for consuming messages from Kafka
     let consumer_task = tokio::spawn(async {
         sleep(Duration::from_secs(5)).await;
-        // lib_consumer::consume().await;
-        lib_consumer::list_topics()
-            .await
-            .expect("Fail to consume message");
+        lib_consumer::consume("hnstories").await;
+        // lib_consumer::list_topics()
+        //     .await
+        //     .expect("Fail to consume message");
     });
 
     // Wait for both tasks to complete

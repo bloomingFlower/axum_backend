@@ -3041,6 +3041,8 @@ dependencies = [
  "eventsource-stream",
  "futures",
  "headers",
+ "lib-consumer",
+ "lib-producer",
  "reqwest 0.12.4",
  "reqwest-eventsource",
  "tokio",

@@ -1,5 +1,6 @@
 use scylla::{FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList};
 use serde::Deserialize;
+use std::{fs, path::PathBuf};
 
 use crate::model::scylla::result::Result;
 
@@ -16,46 +17,7 @@ pub struct HNStory {
     pub points: i32,
 }
 
-// Create keyspace
-static CREATE_KEYSPACE_QUERY: &str = r#"
-  CREATE KEYSPACE IF NOT EXISTS fast_logger
-    WITH REPLICATION = {
-      'class': 'NetworkTopologyStrategy',
-      'replication_factor': 1
-    };
-"#;
-
-// Create table
-static CREATE_HNSTORY_TABLE_QUERY: &str = r#"
-  CREATE TABLE IF NOT EXISTS fast_logger.hnstory (
-    id text PRIMARY KEY,
-    title text,
-    author text,
-    url text,
-    story_text text,
-    tags list<text>,
-    points int
-);
-"#;
-
-// Add story
-static ADD_HNSTORY_QUERY: &str = r#"
-  INSERT INTO fast_logger.hnstory (
-  author, 
-  id, 
-  title, 
-  url, 
-  story_text, 
-  tags, 
-  points) 
-  VALUES (?, ?, ?, ?, ?, ?, ?);
-"#;
-
-// Select story
-static SELECT_HNSTORY_QUERY: &str = r#"
-  SELECT * FROM fast_logger.hnstory
-    WHERE id = ?;
-"#;
+const SQL_DIR: &str = "sql/csql";
 
 pub async fn create_session(uri: &str) -> Result<Session> {
     SessionBuilder::new()
@@ -72,36 +34,53 @@ pub async fn initialize(session: &Session) -> Result<()> {
 }
 
 async fn create_keyspace(session: &Session) -> Result<()> {
+    let query = read_sql_file("dev_initial/00-recreate-db.sql")?;
     session
-        .query(CREATE_KEYSPACE_QUERY, ())
+        .query(query, ())
         .await
         .map(|_| ())
         .map_err(From::from)
 }
 
 async fn create_hnstory_table(session: &Session) -> Result<()> {
+    let query = read_sql_file("dev_initial/01-create-schema.sql")?;
     session
-        .query(CREATE_HNSTORY_TABLE_QUERY, ())
+        .query(query, ())
         .await
         .map(|_| ())
         .map_err(From::from)
 }
 
 pub async fn add_hnstory(session: &Session, hnstory: HNStory) -> Result<()> {
+    let query = read_sql_file("hnstory/01-add-story.sql")?;
     session
-        .query(ADD_HNSTORY_QUERY, hnstory)
+        .query(query, hnstory)
         .await
         .map(|_| ())
         .map_err(From::from)
 }
 
 pub async fn select_hnstory(session: &Session, id: String) -> Result<Vec<HNStory>> {
+    let query = read_sql_file("hnstory/02-select-story.sql")?;
     session
-        .query(SELECT_HNSTORY_QUERY, (id,))
+        .query(query, (id,))
         .await?
         .rows
         .unwrap_or_default()
         .into_typed::<HNStory>()
         .map(|v| v.map_err(From::from))
         .collect()
+}
+
+fn read_sql_file(file_name: &str) -> Result<String> {
+    let current_dir = std::env::current_dir()?;
+    let v: Vec<_> = current_dir.components().collect();
+    let path_comp = v.get(v.len().wrapping_sub(3));
+    let base_dir = if Some(true) == path_comp.map(|c| c.as_os_str() == "crates") {
+        v[..v.len() - 3].iter().collect::<PathBuf>()
+    } else {
+        current_dir.clone()
+    };
+    let sql_file_path = base_dir.join(SQL_DIR).join(file_name);
+    fs::read_to_string(sql_file_path).map_err(From::from)
 }
