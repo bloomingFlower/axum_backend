@@ -1,16 +1,19 @@
 mod config;
 
+use lib_core::model::scylla::db_conn;
+use std::pin::Pin;
+
+use futures::stream::Stream;
 use rdkafka::config::ClientConfig;
-use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
+use rdkafka::consumer::Consumer;
+use rdkafka::consumer::{CommitMode, StreamConsumer};
 use rdkafka::error::KafkaResult;
 use rdkafka::message::Headers; // for the `next` method
+use rdkafka::message::OwnedMessage;
 use rdkafka::metadata::Metadata;
 use rdkafka::Message;
 use std::time::Duration;
 use tracing::{debug, error, info};
-
-use lib_core::model::scylla::db_conn;
-use lib_core::model::scylla::hnstory::{add_hnstory, HNStory};
 
 pub fn create_consumer() -> KafkaResult<StreamConsumer> {
     ClientConfig::new()
@@ -35,7 +38,7 @@ pub async fn consume(topic_name: &str) {
     let topics = vec![topic_name];
 
     consumer
-        .subscribe(&topics.as_slice())
+        .subscribe(topics.as_slice())
         .expect("Can't subscribe to specified topics");
 
     let subscription = consumer.subscription().expect("Failed to get subscription");
@@ -45,7 +48,7 @@ pub async fn consume(topic_name: &str) {
     }
 
     // Create a ScyllaDB session
-    let session = db_conn().await.expect("Failed to create ScyllaDB session");
+    db_conn().await.expect("Failed to create ScyllaDB session");
 
     loop {
         match consumer.recv().await {
@@ -94,6 +97,24 @@ pub async fn consume(topic_name: &str) {
             }
         };
     }
+}
+
+pub async fn consume_stream(
+    topic_name: &str,
+) -> KafkaResult<Pin<Box<dyn Stream<Item = KafkaResult<OwnedMessage>> + Send>>> {
+    let consumer: StreamConsumer = create_consumer()?;
+    consumer.subscribe(&[topic_name])?;
+
+    // Move consumer into the stream
+    let stream = Box::pin(async_stream::stream! {
+        loop {
+            match consumer.recv().await {
+                Ok(msg) => yield Ok(msg.detach()),
+                Err(e) => yield Err(e),
+            }
+        }
+    });
+    Ok(stream)
 }
 
 pub async fn list_topics() -> KafkaResult<()> {

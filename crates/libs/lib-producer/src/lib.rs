@@ -1,7 +1,6 @@
 mod hn;
 pub mod token;
 
-use crate::hn::HNSearchResult;
 use rdkafka::config::ClientConfig;
 use rdkafka::error::RDKafkaErrorCode;
 use rdkafka::error::{KafkaError, KafkaResult};
@@ -65,8 +64,6 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
-
-    
 
     Ok(())
 }

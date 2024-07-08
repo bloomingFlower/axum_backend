@@ -38,23 +38,15 @@ async fn main() -> Result<()> {
     _dev_utils::init_dev().await;
 
     // Spawn a new task for producing messages to Kafka
-    let producer_task = tokio::spawn(async {
-        lib_producer::produce()
-            .await
-            .expect("Fail to produce message");
-    });
+    lib_producer::produce()
+        .await
+        .expect("Fail to produce message");
 
     // Spawn a new task for consuming messages from Kafka
-    let consumer_task = tokio::spawn(async {
+    tokio::spawn(async {
         sleep(Duration::from_secs(5)).await;
         lib_consumer::consume("hnstories").await;
-        // lib_consumer::list_topics()
-        //     .await
-        //     .expect("Fail to consume message");
     });
-
-    // Wait for both tasks to complete
-    // let _ = tokio::try_join!(producer_task, consumer_task);
 
     // Initialize the Model Manager and wait for it to be ready
     let mm = ModelManager::new().await?;

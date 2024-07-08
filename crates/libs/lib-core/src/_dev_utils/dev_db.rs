@@ -75,7 +75,8 @@ async fn p_exec(db: &Db, file: &Path) -> Result<(), sqlx::Error> {
     info!("{:12} - p_exec - {file:?}", "FOR-DEV_ONLY");
     let content = fs::read_to_string(file)?;
 
-    let sqls: Vec<&str> = content.split(";").collect();
+    // Split the content by semicolon character
+    let sqls: Vec<&str> = content.split(';').collect();
 
     for sql in sqls {
         sqlx::query(sql).execute(db).await?;

@@ -5,17 +5,17 @@ use axum::{
 };
 use axum_extra::TypedHeader;
 use futures::stream::{self, Stream};
-use std::{convert::Infallible, path::PathBuf, time::Duration};
-use tokio_stream::StreamExt as _;
-use tower_http::{services::ServeDir, trace::TraceLayer};
-use std::sync::Arc;
-use tokio::sync::broadcast;
-use tracing::{debug, info};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use futures::StreamExt;
+use lib_consumer::consume_stream;
 use lib_producer::produce_bitcoin_info;
 use lib_producer::token::BitcoinInfo;
-use lib_consumer::consume;
-
+use rdkafka::message::Message;
+use std::sync::Arc;
+use std::{convert::Infallible, path::PathBuf, time::Duration};
+use tokio::sync::broadcast;
+use tower_http::{services::ServeDir, trace::TraceLayer};
+use tracing::{debug, info};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
@@ -27,6 +27,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    // Produce Bitcoin Info
     let bitcoin_info = produce_bitcoin_info().await;
     info!("Bitcoin info: {:?}", bitcoin_info);
 
@@ -35,11 +36,21 @@ async fn main() {
     let tx = Arc::new(tx);
 
     let tx_clone = tx.clone();
+
+    // Get Data from Kafka
     tokio::spawn(async move {
-        let mut stream = consume("token").await;
-        while let Some(message) = stream.next().await {
-        if let Ok(bitcoin_info) = parse_bitcoin_info(message) {
-                let _ = tx_clone.send(bitcoin_info);
+        let message_stream = consume_stream("token").await;
+        if let Ok(mut message_stream) = message_stream {
+            while let Some(message_result) = message_stream.next().await {
+                if let Ok(message) = message_result {
+                    if let Some(payload) = message.payload() {
+                        if let Ok(bitcoin_info) =
+                            parse_bitcoin_info(String::from_utf8_lossy(payload).to_string())
+                        {
+                            let _ = tx_clone.send(bitcoin_info);
+                        }
+                    }
+                }
             }
         }
     });
@@ -66,7 +77,10 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
     // build application with a route
     Router::new()
         .fallback_service(static_files_service)
-        .route("/sse", get(move |user_agent| sse_handler(user_agent, tx.clone())))
+        .route(
+            "/sse",
+            get(move |user_agent| sse_handler(user_agent, tx.clone())),
+        )
         .layer(TraceLayer::new_for_http())
 }
 
@@ -76,23 +90,24 @@ async fn sse_handler(
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     info!("`{}` connected", user_agent.as_str());
 
-    let mut rx = tx.subscribe();
+    let rx = tx.subscribe();
 
-    let stream = stream::unfold((), move |_| async move {
+    let stream = stream::unfold(rx, move |mut rx| async move {
+        tokio::time::sleep(Duration::from_secs(1)).await;
         match rx.recv().await {
             Ok(bitcoin_info) => {
-                let event = Event::default().data(format!("Bitcoin Price: {}", bitcoin_info.current_price));
-                Some((Ok(event), ()))
+                let event = Event::default().data(serde_json::to_string(&bitcoin_info).unwrap());
+                info!("Sending update: {:?}", bitcoin_info);
+                Some((Ok(event), rx))
             }
-            Err(_) => None,
+            Err(e) => {
+                info!("Error receiving message: {:?}", e);
+                Some((Ok(Event::default().data("Error receiving message")), rx))
+            }
         }
     });
 
-    Sse::new(stream).keep_alive(
-        axum::response::sse::KeepAlive::new()
-            .interval(Duration::from_secs(1))
-            .text("keep-alive-text"),
-    )
+    Sse::new(stream)
 }
 
 #[cfg(test)]
@@ -111,8 +126,10 @@ mod tests {
             let listener = TcpListener::bind(format!("{}:0", host)).await.unwrap();
             // Retrieve the port assigned to us by the OS
             let port = listener.local_addr().unwrap().port();
+            let (tx, _) = broadcast::channel::<BitcoinInfo>(100);
+            let tx = Arc::new(tx);
             tokio::spawn(async {
-                axum::serve(listener, app()).await.unwrap();
+                axum::serve(listener, app(tx)).await.unwrap();
             });
             // Returns address (e.g. http://127.0.0.1{random_port})
             format!("http://{}:{}", host, port)
