@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     // Spawn a new task for consuming messages from Kafka
     tokio::spawn(async {
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(1)).await;
         lib_consumer::consume("hnstories").await;
     });
 
@@ -83,6 +83,10 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     info!("Listening on {}", listener.local_addr().unwrap());
     // Start the server and handle errors gracefully
+    // The event loop is managed by Tokio runtime within the serve function
+    // Server configuration can be customized using Tokio runtime settings
+    // By default, this is a multi-threaded server leveraging Tokio's runtime
+    // Axum is built on top of Hyper, providing high-performance asynchronous HTTP handling
     if let Err(err) = axum::serve(listener, routes_all.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await

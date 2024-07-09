@@ -8,6 +8,7 @@ documentation.workspace = true
 [dependencies]
 lib-producer = { path = "../../libs/lib-producer" }
 lib-consumer = { path = "../../libs/lib-consumer" }
+lib-utils = { path = "../../libs/lib-utils" }
 
 axum = "0.7.5"
 axum-extra = { version = "0.9.3", features = ["typed-header"] }

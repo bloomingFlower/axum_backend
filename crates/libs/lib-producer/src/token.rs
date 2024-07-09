@@ -3,8 +3,6 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::env;
 
-use tracing::info;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BitcoinInfo {
     pub id: String,
@@ -77,7 +75,7 @@ mod tests {
         let result = get_bitcoin_price().await;
         assert!(result.is_ok());
         let price = result.unwrap();
-        assert!(price.starts_with("$"));
+        assert!(price.starts_with('$'));
         assert!(price.parse::<f64>().is_ok());
     }
 }

@@ -14,7 +14,6 @@ pub fn serve_dir() -> MethodRouter {
     // Any service is a service that matches any request.
     any_service(
         // Generate the ServeDir service with the WEB_FOLDER and the handle_404 service
-        ServeDir::new(&web_config().WEB_FOLDER.clone())
-            .not_found_service(handle_404.into_service()),
+        ServeDir::new(web_config().WEB_FOLDER.clone()).not_found_service(handle_404.into_service()),
     )
 }

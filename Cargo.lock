@@ -3067,6 +3067,7 @@ dependencies = [
  "headers",
  "lib-consumer",
  "lib-producer",
+ "lib-utils",
  "rdkafka",
  "reqwest 0.12.4",
  "reqwest-eventsource",

@@ -69,6 +69,6 @@ pub async fn main_response_mapper(
 
     debug!("\n");
 
-    // unwrap_or_else is better than unwrap_or because it does not evaluate the default value if it is not needed.
-    error_response.unwrap_or_else(|| res)
+    // Use unwrap_or instead of unwrap_or_else for a simple value
+    error_response.unwrap_or(res)
 }
