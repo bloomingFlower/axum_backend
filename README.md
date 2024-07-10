@@ -32,6 +32,9 @@ cargo run -p gen-key
 ```sh
 #cargo watch -q -c -w src/ -w .cargo/ -x 'run'
 cargo run -p web-server
+
+# Run sse
+cargo run -p sse-service
 ```
 
 ### Run Tests

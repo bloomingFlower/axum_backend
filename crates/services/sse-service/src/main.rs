@@ -1,3 +1,5 @@
+mod config;
+
 use axum::{
     response::sse::{Event, Sse},
     routing::get,
@@ -17,6 +19,8 @@ use tokio::sync::broadcast;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::config::consume_config;
 
 /// /// Main function to initialize the SSE service
 /// 1. Initialize tracing subscriber for logging
@@ -83,10 +87,14 @@ async fn main() {
     let app = app(tx);
 
     // Run the application
-    let sse_server_url = env::var("SSE_SERVER_URL").expect("SSE_SERVER_URL must be set");
-    let listener = tokio::net::TcpListener::bind(sse_server_url).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&consume_config().SSE_SERVER_URL)
+        .await
+        .unwrap();
     // Log the address the server is listening on
-    debug!("listening on {}", listener.local_addr().unwrap());
+    debug!(
+        "--> SSE Service: listening on {}",
+        listener.local_addr().unwrap()
+    );
     // Serve the Axum application
     axum::serve(listener, app).await.unwrap();
 }
@@ -123,7 +131,7 @@ async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     tx: Arc<broadcast::Sender<BitcoinInfo>>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    info!("`{}` connected", user_agent.as_str());
+    info!("--> SSE Handler: `{}` connected", user_agent.as_str());
 
     // Subscribe to the broadcast channel
     // This returns a Receiver that can be used to receive messages from the broadcast channel
@@ -141,11 +149,11 @@ async fn sse_handler(
                 // Create an event with the Bitcoin information
                 let event = Event::default().data(bitcoin_info_str);
                 // Send the event to the client
-                info!("Sending update: {:?}", bitcoin_info);
+                info!("--> SSE Handler: Sending update: {:?}", bitcoin_info);
                 Some((Ok(event), rx))
             }
             Err(e) => {
-                info!("Error receiving message: {:?}", e);
+                info!("--> SSE Handler: Error receiving message: {:?}", e);
                 Some((Ok(Event::default().data("Error receiving message")), rx))
             }
         }

@@ -16,6 +16,8 @@ RUST_LOG = "web_server=debug,web_socket=debug,sse_service=debug,lib_core=debug,l
 # Keys and passwords below are for local development only.
 # i.e., Encryption not required.
 
+SERVICE_WEB_SERVER_URL = "127.0.0.1:3000"
+
 SERVICE_POSTGRESQL_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
 
 SERVICE_SCYLLA_DB_URL = "127.0.0.1:9042"
@@ -28,9 +30,9 @@ SERVICE_TOKEN_KEY = "KnPH2IsuLL1eT-bRF4fQnQ5MU9c162sVZqtde2DqCHJDmzVaEwBNG-57MOL
 
 SERVICE_TOKEN_DURATION_SEC = "1800"
 
-SERVICE_BOOTSTRAP_SERVER_URL = "127.0.0.1:9092"
+KAFKA_BOOTSTRAP_SERVERS = "127.0.0.1:9092"
 
-SERVICE_SSE_SERVER_URL = "127.0.0.1:3000"
+SERVICE_SSE_SERVER_URL = "127.0.0.1:4000"
 
 ## ConfigMap
 

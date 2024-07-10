@@ -21,7 +21,7 @@ async fn send_to_kafka<T: serde::Serialize>(
     payload: &T,
 ) -> Result<(), KafkaError> {
     let buffer = serde_json::to_string(payload).map_err(|e| {
-        error!("Serialization error: {:?}", e);
+        error!("--> Kafka Producer: Serialization error: {:?}", e);
         KafkaError::MessageProduction(RDKafkaErrorCode::BadMessage)
     })?;
 
@@ -33,8 +33,8 @@ async fn send_to_kafka<T: serde::Serialize>(
         .await;
 
     match delivery_status {
-        Ok(delivery) => debug!("Sent: {:?}", delivery),
-        Err((err, _)) => error!("Error: {:?}", err),
+        Ok(delivery) => debug!("--> Kafka Producer: Sent: {:?}", delivery),
+        Err((err, _)) => error!("--> Kafka Producer: Error: {:?}", err),
     }
 
     Ok(())
@@ -51,16 +51,16 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
             interval.tick().await;
             match hn::fetch_hn_stories("Rust".into(), 10).await {
                 Ok(stories) => {
-                    info!("Fetched {} stories", stories.hits.len());
+                    info!("--> Kafka Producer: Fetched {} stories", stories.hits.len());
                     for story in stories.hits {
                         if let Err(e) =
                             send_to_kafka(&hn_producer, "hnstories", "Rust", &story).await
                         {
-                            error!("Failed to send HN story: {:?}", e);
+                            error!("--> Kafka Producer: Failed to send HN story: {:?}", e);
                         }
                     }
                 }
-                Err(e) => error!("Failed to fetch HN stories: {:?}", e),
+                Err(e) => error!("--> Kafka Producer: Failed to fetch HN stories: {:?}", e),
             }
         }
     });
@@ -82,10 +82,10 @@ pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error>> {
                     if let Err(e) =
                         send_to_kafka(&bitcoin_producer, "token", "Bitcoin", &bitcoin_info).await
                     {
-                        error!("Failed to send Bitcoin info: {:?}", e);
+                        error!("--> Kafka Producer: Failed to send Bitcoin info: {:?}", e);
                     }
                 }
-                Err(e) => error!("Failed to fetch Bitcoin info: {:?}", e),
+                Err(e) => error!("--> Kafka Producer: Failed to fetch Bitcoin info: {:?}", e),
             }
         }
     });

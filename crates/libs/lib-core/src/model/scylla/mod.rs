@@ -15,7 +15,7 @@ pub async fn db_conn() -> Result<Session> {
     let password = &core_config().SCYLLA_DB_PASSWORD;
     let uri = &core_config().SCYLLA_DB_URL;
     info!(
-        "Connecting to scylla db at {} with username {}",
+        "--> Scylla: Connecting to scylla db at {} with username {}",
         uri, username
     );
     // Create a ScyllaDB session with authentication

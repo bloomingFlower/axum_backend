@@ -26,13 +26,14 @@ pub fn create_consumer() -> KafkaResult<StreamConsumer> {
     ClientConfig::new()
         .set(
             "bootstrap.servers",
-            &config::consume_config().BOOTSTRAP_SERVER_URL,
+            &config::consume_config().KAFKA_BOOTSTRAP_SERVERS,
         )
         .set("group.id", "consumer_group")
         .set("enable.partition.eof", "false")
         .set("enable.auto.commit", "true")
         .set("socket.timeout.ms", "4000")
         .set("auto.offset.reset", "earliest")
+        .set("fetch.min.bytes", "1")
         // .set_log_level(RDKafkaLogLevel::Debug)
         // .set("debug", "all")
         .create()
@@ -40,7 +41,10 @@ pub fn create_consumer() -> KafkaResult<StreamConsumer> {
 
 // Asynchronous function to consume messages from a Kafka topic
 pub async fn consume(topic_name: &str) {
-    info!("Start Kafka consume for topics: {:?}", topic_name);
+    info!(
+        "--> Kafka Consumer: Start Kafka consume for topics: {:?}",
+        topic_name
+    );
     // Create a Kafka consumer
     let consumer: StreamConsumer = create_consumer().expect("Consumer creation failed");
 
@@ -54,10 +58,13 @@ pub async fn consume(topic_name: &str) {
 
     // Get the subscription details
     let subscription = consumer.subscription().expect("Failed to get subscription");
-    info!("Subscribed to the following topics:");
+    info!("--> Kafka Consumer: Subscribed to the following topics:");
     for topic in subscription.elements() {
         println!("  - {}", topic.topic());
     }
+
+    // Sleep for 2 seconds to allow the consumer to start consuming messages
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // Create a ScyllaDB session
     let session = db_conn().await.expect("Failed to create ScyllaDB session");
@@ -66,7 +73,7 @@ pub async fn consume(topic_name: &str) {
     loop {
         // Receive a message from the consumer
         match consumer.recv().await {
-            Err(e) => error!("Kafka error: {}", e),
+            Err(e) => error!("--> Kafka Consumer: Kafka error: {}", e),
             // Process the received message
             Ok(m) => {
                 // Extract the payload from the message
@@ -131,6 +138,9 @@ pub async fn consume_stream(
     let consumer: StreamConsumer = create_consumer()?;
     // Subscribe to the specified topic
     consumer.subscribe(&[topic_name])?;
+
+    // Sleep for 2 seconds to allow the consumer to start consuming messages
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // Create a pinned boxed stream from the consumer
     // Pin<Box<dyn ...>> is used to create a pinned, heap-allocated stream

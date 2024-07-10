@@ -19,7 +19,6 @@ use axum::{middleware, Router};
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
 use tokio::signal;
-use tokio::time::{sleep, Duration};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -44,7 +43,6 @@ async fn main() -> Result<()> {
 
     // Spawn a new task for consuming messages from Kafka
     tokio::spawn(async {
-        sleep(Duration::from_secs(1)).await;
         lib_consumer::consume("hnstories").await;
     });
 
@@ -80,8 +78,13 @@ async fn main() -> Result<()> {
 
     // region: Start the server
     // Create a TCP Listener on port 3000
-    let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    info!("Listening on {}", listener.local_addr().unwrap());
+    let listener = TcpListener::bind(&web_config().SERVICE_WEB_SERVER_URL)
+        .await
+        .unwrap();
+    info!(
+        "--> Web Server: Listening on {}",
+        listener.local_addr().unwrap()
+    );
     // Start the server and handle errors gracefully
     // The event loop is managed by Tokio runtime within the serve function
     // Server configuration can be customized using Tokio runtime settings

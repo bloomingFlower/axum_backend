@@ -15,6 +15,7 @@ pub fn web_config() -> &'static Config {
 /// The configuration of the service
 #[allow(non_snake_case)]
 pub struct Config {
+    pub SERVICE_WEB_SERVER_URL: String,
     pub WEB_FOLDER: String,
 }
 
@@ -22,6 +23,7 @@ pub struct Config {
 impl Config {
     fn load_env_var() -> lib_utils::envs::Result<Config> {
         Ok(Config {
+            SERVICE_WEB_SERVER_URL: get_env("SERVICE_WEB_SERVER_URL")?,
             WEB_FOLDER: get_env("SERVICE_WEB_FOLDER")?,
         })
     }
