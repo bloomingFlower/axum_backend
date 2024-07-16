@@ -21,3 +21,12 @@ RUN apt-get update && apt-get install -y libssl1.1 ca-certificates && rm -rf /va
 COPY --from=builder /usr/src/app/target/release/web-server /usr/local/bin/web-server
 
 CMD ["web-server"]
+
+# Build the sse-server binary
+FROM debian:bullseye-slim as sse-server
+
+RUN apt-get update && apt-get install -y libssl1.1 ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/src/app/target/release/sse-service /usr/local/bin/sse-service
+
+CMD ["sse-service"]
