@@ -1,10 +1,19 @@
 # Builder stage
 FROM rust:1.79 AS builder
 
-# Install dependencies
+LABEL maintainer="JYY <yourrubber@duck.com>"
+
+# Create APT cache directory and set permissions
+RUN mkdir -p /var/cache/apt/archives/partial && \
+    chmod 755 /var/cache/apt/archives/partial
+
+# Update and install dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    cmake pkg-config libssl-dev && \
+    cmake pkg-config libssl-dev
+
+# Clean up APT cache
+RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
@@ -24,6 +33,7 @@ RUN apt-get update && \
 COPY --from=builder /usr/src/app/target/release/web-server /usr/local/bin/web-server
 
 CMD ["web-server"]
+EXPOSE 3000
 
 # SSE-server image
 FROM debian:bullseye-slim AS sse-server
@@ -36,6 +46,7 @@ RUN apt-get update && \
 COPY --from=builder /usr/src/app/target/release/sse-service /usr/local/bin/sse-service
 
 CMD ["sse-service"]
+EXPOSE 3001
 
 # # Builder stage
 # FROM --platform=$BUILDPLATFORM rust:1.79 AS builder
