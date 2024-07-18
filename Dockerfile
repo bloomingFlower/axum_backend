@@ -1,5 +1,5 @@
 # Builder stage
-FROM rust:1.79 AS builder
+FROM rust:latest AS builder
 
 # Create APT cache directory and set permissions
 RUN mkdir -p /var/cache/apt/archives/partial && \
@@ -14,21 +14,19 @@ RUN apt-get update && \
     cmake pkg-config libssl-dev && \
     rm -rf /var/lib/apt/lists/* || true
 
-# Reinstall Rust toolchain
-RUN rustup self update && rustup update
+# Install necessary Rust components
+RUN rustup component add rustfmt clippy
 
 WORKDIR /usr/src/app
 COPY . .
 
 # Set appropriate permissions
 RUN chown -R rust:rust /usr/src/app
-
 # Switch to non-root user
 USER rust
 
 # Build both services
 RUN cargo build --release --bin web-server --bin sse-service
-
 
 # Web-server image
 FROM debian:bullseye-slim AS web-server
