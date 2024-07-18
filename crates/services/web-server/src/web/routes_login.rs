@@ -16,8 +16,8 @@ use tracing::debug;
 pub fn routes(mm: ModelManager) -> Router {
     // Create the Login Route with the POST method and the api_login handler
     Router::new()
-        .route("/api/login", post(api_login_handler))
-        .route("/api/logoff", post(api_logoff_handler))
+        .route("/api/v2/login", post(api_login_handler))
+        .route("/api/v2/logoff", post(api_logoff_handler))
         .with_state(mm) // mm is passed to the State that can be accessed in the handler with State(ModelManager)
 }
 

@@ -11,10 +11,11 @@ pub use self::error::{Error, Result};
 
 use crate::web::mw_auth::{mw_ctx_resolver, mw_require_auth};
 use crate::web::mw_res_map::main_response_mapper;
-use crate::web::{routes_login, routes_rpc, routes_static};
+use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
 use lib_core::model::psql::ModelManager;
 
+use axum::routing::get;
 use axum::{middleware, Router};
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
@@ -66,13 +67,16 @@ async fn main() -> Result<()> {
         // Merge the Hello Routes
         // .merge(routes_hello)
         // Nest the API Routes under the /api path
-        .nest("/api", routes_rpc)
+        .nest("/api/v2", routes_rpc)
         // Add a middleware to map the all responses
         .layer(middleware::map_response(main_response_mapper))
         // Add a middleware to resolve the context
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
+        // Add HNStory routes
+        .route("/hnstories", get(routes_hnstory::list_hnstories))
+        .route("/hnstories/:id", get(routes_hnstory::get_hnstory))
         // Add a fallback service to serve static files
         .fallback_service(routes_static::serve_dir());
 

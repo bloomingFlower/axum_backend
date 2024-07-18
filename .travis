@@ -1,0 +1,43 @@
+language: rust
+rust:
+  - stable
+
+services:
+  - docker
+
+cache:
+  cargo: true
+  directories:
+    - $HOME/.cargo
+    - $TRAVIS_BUILD_DIR/target
+
+before_cache:
+  - rm -rf $HOME/.cargo/registry
+
+before_install:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker pull bloomingflower/axum-backend-web:latest || true
+  - docker pull bloomingflower/axum-backend-sse:latest || true
+
+env:
+  global:
+    - CARGO_BUILD_JOBS=2
+
+script:
+  - cargo build --release
+
+after_success:
+  # web-server
+  - docker build --target web-server -t bloomingflower/axum-backend-web:latest .
+  - docker push bloomingflower/axum-backend-web:latest
+  
+  # sse-service
+  - docker build --target sse-server -t bloomingflower/axum-backend-sse:latest .
+  - docker push bloomingflower/axum-backend-sse:latest
+
+branches:
+  only:
+    - master
+
+matrix:
+  fast_finish: true

@@ -4,11 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSE Test</title>
+    <title>Bitcoin Price SSE Test</title>
+    <style>
+        #price {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #countdown {
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Server-Sent Events Test</h1>
+    <h1>Bitcoin Price Updates</h1>
+    <div id="price"></div>
+    <div id="countdown"></div>
     <div id="messages"></div>
     <script src="script.js"></script>
 </body>

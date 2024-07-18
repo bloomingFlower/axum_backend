@@ -1,10 +1,10 @@
 use scylla::{FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
 use crate::model::scylla::result::Result;
 
-#[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList)]
+#[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList, Serialize)]
 pub struct HNStory {
     pub author: String,
     #[serde(alias = "objectID")]
@@ -61,9 +61,38 @@ pub async fn add_hnstory(session: &Session, hnstory: HNStory) -> Result<()> {
 }
 
 pub async fn select_hnstory(session: &Session, id: String) -> Result<Vec<HNStory>> {
-    let query = read_sql_file("hnstory/02-select-story.sql")?;
+    let query = read_sql_file("hnstory/00-select-story.sql")?;
     session
         .query(query, (id,))
+        .await?
+        .rows
+        .unwrap_or_default()
+        .into_typed::<HNStory>()
+        .map(|v| v.map_err(From::from))
+        .collect()
+}
+
+pub async fn select_all_hnstories(session: &Session) -> Result<Vec<HNStory>> {
+    let query = read_sql_file("hnstory/02-select-all-stories.sql")?;
+    session
+        .query(query, ())
+        .await?
+        .rows
+        .unwrap_or_default()
+        .into_typed::<HNStory>()
+        .map(|v| v.map_err(From::from))
+        .collect()
+}
+
+pub async fn select_all_hnstories_with_pagination(
+    session: &Session,
+    page: u32,
+    limit: u32,
+) -> Result<Vec<HNStory>> {
+    let offset = (page - 1) * limit;
+    let query = read_sql_file("hnstory/03-select-stories-with-pagination.sql")?;
+    session
+        .query(query, (limit as i64, offset as i64))
         .await?
         .rows
         .unwrap_or_default()

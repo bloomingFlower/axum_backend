@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
     let ht = httpc_test::new_client("http://localhost:3000")?;
     ht.do_get("/index.html").await?.print().await?;
     let req_login = ht.do_post(
-        "/api/login",
+        "/api/v2/login",
         json!({
             "username": "demo1",
             "password": "demo"
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
     let mut task_ids: Vec<i64> = Vec::new();
     for i in 0..=4 {
         let req_create_task = ht.do_post(
-            "/api/rpc",
+            "/api/v2/rpc",
             json!({
                 "id": 1,
                 "method": "task.create",
@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     }
 
     let req_update_task = ht.do_post(
-        "/api/rpc",
+        "/api/v2/rpc",
         json!({
             "id": 1,
             "method": "task.update",
@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     req_update_task.await?.print().await?;
 
     let req_delete_task = ht.do_post(
-        "/api/rpc",
+        "/api/v2/rpc",
         json!({
             "id": 1,
             "method": "task.delete",
@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
     req_delete_task.await?.print().await?;
 
     let req_list_tasks = ht.do_post(
-        "/api/rpc",
+        "/api/v2/rpc",
         json!({
             "id": 1,
             "method": "task.list",
@@ -89,7 +89,7 @@ async fn main() -> Result<()> {
     req_list_tasks.await?.print().await?;
 
     let req_logoff = ht.do_post(
-        "/api/logoff",
+        "/api/v2/logoff",
         json!({
             "logoff": true
         }),

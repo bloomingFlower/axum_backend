@@ -14,6 +14,7 @@ use lib_producer::token::BitcoinInfo;
 use rdkafka::message::Message;
 use std::env;
 use std::sync::Arc;
+use std::time::SystemTime;
 use std::{convert::Infallible, path::PathBuf, time::Duration};
 use tokio::sync::broadcast;
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -121,10 +122,17 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
         .fallback_service(static_files_service)
         // Route the request to the SSE handler
         .route(
-            "/sse",
+            "/sse-",
             get(move |user_agent| sse_handler(user_agent, tx.clone())),
         )
         .layer(TraceLayer::new_for_http())
+}
+
+// BitcoinInfoWithCountdown struct
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct BitcoinInfoWithCountdown {
+    price: f64,
+    countdown: i64,
 }
 
 async fn sse_handler(
@@ -133,32 +141,46 @@ async fn sse_handler(
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     info!("--> SSE Handler: `{}` connected", user_agent.as_str());
 
-    // Subscribe to the broadcast channel
-    // This returns a Receiver that can be used to receive messages from the broadcast channel
     let rx = tx.subscribe();
 
-    // Create a stream from the receiver
-    let stream = stream::unfold(rx, move |mut rx| async move {
-        // Sleep for 1 second before receiving the first message
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        // Receive a message from the broadcast channel
-        match rx.recv().await {
-            Ok(bitcoin_info) => {
-                // Convert the Bitcoin information to a string
-                let bitcoin_info_str = serde_json::to_string(&bitcoin_info).unwrap();
-                // Create an event with the Bitcoin information
-                let event = Event::default().data(bitcoin_info_str);
-                // Send the event to the client
-                info!("--> SSE Handler: Sending update: {:?}", bitcoin_info);
-                Some((Ok(event), rx))
+    let stream = stream::unfold(
+        (rx, SystemTime::now()),
+        move |(mut rx, last_update)| async move {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+
+            match rx.recv().await {
+                Ok(bitcoin_info) => {
+                    let now = SystemTime::now();
+                    let elapsed = now
+                        .duration_since(last_update)
+                        .unwrap_or(Duration::from_secs(0));
+                    let countdown = 300_i64.saturating_sub(elapsed.as_secs() as i64);
+
+                    let info_with_countdown = BitcoinInfoWithCountdown {
+                        price: bitcoin_info.current_price,
+                        countdown,
+                    };
+
+                    let info_str = serde_json::to_string(&info_with_countdown).unwrap();
+                    let event = Event::default().data(info_str);
+
+                    info!("--> SSE Handler: Sending update: {:?}", info_with_countdown);
+                    Some((
+                        Ok(event),
+                        (rx, if countdown == 0 { now } else { last_update }),
+                    ))
+                }
+                Err(e) => {
+                    info!("--> SSE Handler: Error receiving message: {:?}", e);
+                    Some((
+                        Ok(Event::default().data("Error receiving message")),
+                        (rx, last_update),
+                    ))
+                }
             }
-            Err(e) => {
-                info!("--> SSE Handler: Error receiving message: {:?}", e);
-                Some((Ok(Event::default().data("Error receiving message")), rx))
-            }
-        }
-    });
-    // Return a stream of events
+        },
+    );
+
     Sse::new(stream)
 }
 

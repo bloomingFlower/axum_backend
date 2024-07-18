@@ -1,0 +1,1 @@
+SELECT * FROM fast_logger.hnstory LIMIT 100;
