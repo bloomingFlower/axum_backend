@@ -38,7 +38,7 @@ jobs:
         run: cargo build --verbose
       # Ensure the DB has time to start up
       - name: Wait for DB
-        run: sleep 60
+        run: sleep 50
       # Add a step to run the server before tests
       - name: Start Server
         run: cargo run -p web-server &
@@ -62,15 +62,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: bloomingflower/axum-backend:latest
+          tags: |
+            bloomingflower/axum-backend-web:latest
+            bloomingflower/axum-backend-sse:latest
