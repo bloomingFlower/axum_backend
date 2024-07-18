@@ -14,11 +14,21 @@ RUN apt-get update && \
     cmake pkg-config libssl-dev && \
     rm -rf /var/lib/apt/lists/* || true
 
+# Reinstall Rust toolchain
+RUN rustup self update && rustup update
+
 WORKDIR /usr/src/app
 COPY . .
 
+# Set appropriate permissions
+RUN chown -R rust:rust /usr/src/app
+
+# Switch to non-root user
+USER rust
+
 # Build both services
 RUN cargo build --release --bin web-server --bin sse-service
+
 
 # Web-server image
 FROM debian:bullseye-slim AS web-server
