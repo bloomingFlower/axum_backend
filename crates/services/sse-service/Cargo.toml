@@ -1,5 +1,6 @@
 [package]
 name = "sse-service"
+version = "0.1.0"
 edition = "2021"
 authors.workspace = true
 description.workspace = true

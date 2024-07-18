@@ -1,20 +1,18 @@
 # Builder stage
 FROM rust:1.79 AS builder
 
-LABEL maintainer="JYY <yourrubber@duck.com>"
-
 # Create APT cache directory and set permissions
 RUN mkdir -p /var/cache/apt/archives/partial && \
     chmod 755 /var/cache/apt/archives/partial
 
+# Modify APT settings to ignore errors in post-invoke scripts
+RUN echo 'APT::Update::Post-Invoke-Success {"return 0";};' > /etc/apt/apt.conf.d/99ignorepostinvoke
+
 # Update and install dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    cmake pkg-config libssl-dev
-
-# Clean up APT cache
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    cmake pkg-config libssl-dev && \
+    rm -rf /var/lib/apt/lists/* || true
 
 WORKDIR /usr/src/app
 COPY . .
