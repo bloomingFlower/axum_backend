@@ -3,12 +3,14 @@ FROM --platform=$BUILDPLATFORM rust:1.79 as builder
 ARG TARGETPLATFORM
 
 # Cross-compilation settings for ARM64
-RUN case "$TARGETPLATFORM" in \
-    "linux/arm64") rustup target add aarch64-unknown-linux-gnu ;; \
-    esac
-
-# Install cmake and other necessary dependencies
-RUN apt-get update && apt-get install -y cmake libssl-dev pkg-config
+RUN apt-get update && apt-get install -y cmake libssl-dev pkg-config \
+    && case "$TARGETPLATFORM" in \
+    "linux/arm64") \
+    apt-get install -y gcc-aarch64-linux-gnu \
+    && rustup target add aarch64-unknown-linux-gnu \
+    && echo '[target.aarch64-unknown-linux-gnu]\nlinker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config ;; \
+    esac \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 COPY . .
