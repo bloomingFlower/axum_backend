@@ -1,5 +1,5 @@
 # Build the web-server and sse-service binaries
-FROM rust:1.79 as builder
+FROM --platform=$BUILDPLATFORM rust:1.79 as builder
 
 LABEL maintainer="JYY <yourrubber@duck.com>"
 
@@ -11,7 +11,7 @@ COPY . .
 RUN cargo build --release --bin web-server
 RUN cargo build --release --bin sse-service
 
-FROM debian:bullseye-slim as web-server
+FROM --platform=$TARGETPLATFORM debian:bullseye-slim as web-server
 
 # Install necessary runtime dependencies
 RUN apt-get update && apt-get install -y libssl1.1 ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -20,7 +20,7 @@ COPY --from=builder /usr/src/app/target/release/web-server /usr/local/bin/web-se
 
 CMD ["web-server"]
 
-FROM debian:bullseye-slim as sse-server
+FROM --platform=$TARGETPLATFORM debian:bullseye-slim as sse-server
 
 RUN apt-get update && apt-get install -y libssl1.1 ca-certificates && rm -rf /var/lib/apt/lists/*
 
