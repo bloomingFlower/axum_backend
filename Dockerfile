@@ -27,7 +27,7 @@ FROM debian:bullseye-slim AS web-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libssl3 ca-certificates && \
+    libssl-dev ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/app/target/release/web-server /usr/local/bin/web-server
@@ -40,7 +40,7 @@ FROM debian:bullseye-slim AS sse-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libssl3 ca-certificates && \
+    libssl-dev ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/app/target/release/sse-service /usr/local/bin/sse-service

@@ -16,6 +16,7 @@ on:
       - 'README.md'
       - 'LICENSE'
       - 'Makefile'
+      - 'Dockerfile'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
@@ -23,6 +24,7 @@ on:
       - 'LICENSE'
       - 'Makefile'
       - '.travis.yml'
+      - 'Dockerfile'
   schedule:
     - cron: '16 4 * * 6'
 
