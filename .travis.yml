@@ -25,7 +25,7 @@ script:
 after_success:
 - export VERSION=$(git rev-parse --short HEAD)
 - rsync -rave "ssh -i id_rsa" --exclude=target --exclude=.cargo . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
-- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER bash -l -c "nohup mkdir -p axum-backend && cd
+- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER bash -l -c "mkdir -p axum-backend && cd
   axum-backend && export VERSION='$VERSION' && \ docker build --build-arg VERSION=$VERSION
   --target web-server -t bloomingflower/axum-backend-web:$VERSION . && \ docker tag
   bloomingflower/axum-backend-web:$VERSION bloomingflower/axum-backend-web:latest
