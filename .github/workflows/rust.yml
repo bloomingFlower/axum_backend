@@ -7,12 +7,14 @@ on:
       - 'README.md'
       - 'LICENSE'
       - 'Makefile'
+      - '.travis.yml'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
       - 'Makefile'
+      - '.travis.yml'
 
 env:
   CARGO_TERM_COLOR: always
