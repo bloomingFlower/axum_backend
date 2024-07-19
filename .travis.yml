@@ -1,6 +1,8 @@
+os: linux
+dist: focal
 language: rust
 rust:
-  - 1.79
+  - 1.79.0
 
 services:
   - docker
@@ -30,15 +32,15 @@ script:
 
 after_success:
   - export VERSION=$(git rev-parse --short HEAD)
-  - rsync -rave "ssh -i ../id_rsa" --exclude=.cargo . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
+  - rsync -rave "ssh -i ../id_rsa" --exclude=node_modules . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
   - ssh -i ../id_rsa $DEPLOY_USER@$DEPLOY_SERVER "nohup mkdir -p axum-backend && cd axum-backend && export VERSION='$VERSION' && \
     docker build --build-arg VERSION=$VERSION --target web-server -t bloomingflower/axum-backend-web:$VERSION . && \
     docker tag bloomingflower/axum-backend-web:$VERSION bloomingflower/axum-backend-web:latest && \
-    # docker push bloomingflower/axum-backend-web:$VERSION && \
+    docker push bloomingflower/axum-backend-web:$VERSION && \
     docker push bloomingflower/axum-backend-web:latest && \
     docker build --build-arg VERSION=$VERSION --target sse-server -t bloomingflower/axum-backend-sse:$VERSION . && \
     docker tag bloomingflower/axum-backend-sse:$VERSION bloomingflower/axum-backend-sse:latest && \
-    # docker push bloomingflower/axum-backend-sse:$VERSION && \
+    docker push bloomingflower/axum-backend-sse:$VERSION && \
     docker push bloomingflower/axum-backend-sse:latest && \
     docker system prune -af --volumes && \
     rm -rf dist > /dev/null 2>&1 &"
@@ -47,5 +49,5 @@ branches:
   only:
     - master
 
-matrix:
+jobs:
   fast_finish: true
