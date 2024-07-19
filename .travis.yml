@@ -17,7 +17,7 @@ before_install:
   -in id_rsa.enc -out id_rsa -d
 - chmod 600 id_rsa
 - echo -e "Host $DEPLOY_SERVER\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-- cat ~/.ssh/config
+- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER "sudo usermod -aG docker $USER && docker run hello-world" || travis_terminate 1
 - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 env:
   global:
@@ -27,8 +27,7 @@ script:
 after_success:
 - export VERSION=$(git rev-parse --short HEAD)
 - rsync -rave "ssh -i id_rsa" --exclude=target --exclude=.cargo . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
-- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER "sudo usermod -aG docker $USER"
-- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER bash -l -c "export PATH=$PATH:/usr/bin && nohup mkdir -p axum-backend && cd
+- ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER bash -l -c "sudo usermod -aG docker $USER && export PATH=$PATH:/usr/bin && nohup mkdir -p axum-backend && cd
   axum-backend && export VERSION='$VERSION' && \ /usr/bin/docker build --build-arg VERSION=$VERSION
   --target web-server -t bloomingflower/axum-backend-web:$VERSION . && \ /usr/bin/docker tag
   bloomingflower/axum-backend-web:$VERSION bloomingflower/axum-backend-web:latest
