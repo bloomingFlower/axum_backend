@@ -10,8 +10,6 @@ cache:
   directories:
   - "$HOME/.cargo"
   - "$TRAVIS_BUILD_DIR/target"
-before_cache:
-- rm -rf $HOME/.cargo/registry
 before_install:
 - openssl aes-256-cbc -K $encrypted_f217180e22ee_key -iv $encrypted_f217180e22ee_iv
   -in id_rsa.enc -out id_rsa -d
