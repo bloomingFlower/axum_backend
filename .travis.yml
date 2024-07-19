@@ -28,10 +28,6 @@ before_install:
 env:
   global:
     - CARGO_BUILD_JOBS=2
-    
-before_script:
-  - echo "DEPLOY_USER is set to: $DEPLOY_USER"
-  - echo "DEPLOY_SERVER is set to: $DEPLOY_SERVER"
 
 script:
   - cargo build --release
