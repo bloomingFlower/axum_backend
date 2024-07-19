@@ -20,12 +20,18 @@ before_install:
   - openssl aes-256-cbc -K $encrypted_f217180e22ee_key -iv $encrypted_f217180e22ee_iv
     -in id_rsa.enc -out ../id_rsa -d
   - chmod 600 ../id_rsa
+  - ls -l ../id_rsa
   - echo -e "Host $DEPLOY_SERVER\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - cat ~/.ssh/config
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 env:
   global:
     - CARGO_BUILD_JOBS=2
+    
+before_script:
+  - echo "DEPLOY_USER is set to: $DEPLOY_USER"
+  - echo "DEPLOY_SERVER is set to: $DEPLOY_SERVER"
 
 script:
   - cargo build --release
@@ -33,6 +39,7 @@ script:
 after_success:
   - export VERSION=$(git rev-parse --short HEAD)
   - rsync -rave "ssh -i ../id_rsa" --exclude=node_modules . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
+  - ssh -v -i ../id_rsa $DEPLOY_USER@$DEPLOY_SERVER "echo 'SSH connection successful'"
   - ssh -i ../id_rsa $DEPLOY_USER@$DEPLOY_SERVER "nohup mkdir -p axum-backend && cd axum-backend && export VERSION='$VERSION' && \
     docker build --build-arg VERSION=$VERSION --target web-server -t bloomingflower/axum-backend-web:$VERSION . && \
     docker tag bloomingflower/axum-backend-web:$VERSION bloomingflower/axum-backend-web:latest && \
