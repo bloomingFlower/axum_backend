@@ -5,25 +5,19 @@ FROM rust:latest AS builder
 RUN mkdir -p /var/cache/apt/archives/partial && \
     chmod 755 /var/cache/apt/archives/partial
 
-# Modify APT settings to ignore errors in post-invoke scripts
-RUN echo 'APT::Update::Post-Invoke-Success {"return 0";};' > /etc/apt/apt.conf.d/99ignorepostinvoke
+# Update package lists
+RUN apt-get update
 
-# Update and install dependencies
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    cmake pkg-config libssl-dev && \
-    rm -rf /var/lib/apt/lists/* || true
+# Install dependencies
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    cmake pkg-config libssl-dev
 
-# Install necessary Rust components
-RUN rustup component add rustfmt clippy
+# Clean up
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 COPY . .
-
-# Set appropriate permissions
-RUN chown -R rust:rust /usr/src/app
-# Switch to non-root user
-USER rust
 
 # Build both services
 RUN cargo build --release --bin web-server --bin sse-service
