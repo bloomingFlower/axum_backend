@@ -22,14 +22,14 @@ members = [ # Packages to include in the workspace.
 
     # -- Application Services
     "crates/services/web-server",
-    "crates/services/web-socket",
+    # "crates/services/web-socket",
     "crates/services/sse-service",
 
     # -- Tools
     "crates/tools/gen-key",
 
     # -- Test
-    "crates/services/scylla-test",
+    # "crates/services/scylla-test",
 ]
 
 [profile.release]
