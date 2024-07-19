@@ -23,7 +23,7 @@ COPY . .
 RUN cargo build --release --bin web-server --bin sse-service
 
 # Web-server image
-FROM debian:bullseye-slim AS web-server
+FROM ubuntu:22.04 AS web-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -36,7 +36,7 @@ CMD ["web-server"]
 EXPOSE 3000
 
 # SSE-server image
-FROM debian:bullseye-slim AS sse-server
+FROM ubuntu:22.04 AS sse-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
