@@ -17,11 +17,14 @@ before_install:
 - echo -e "Host $DEPLOY_SERVER\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 - ssh -i id_rsa $DEPLOY_USER@$DEPLOY_SERVER "docker run hello-world" || travis_terminate 1
 - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
 env:
   global:
   - CARGO_BUILD_JOBS=2
+
 script:
 - cargo build --workspace
+
 after_success:
 - export VERSION=$(git rev-parse --short HEAD)
 - rsync -rave "ssh -i id_rsa" --exclude=target --exclude=.cargo . $DEPLOY_USER@$DEPLOY_SERVER:~/axum-backend
