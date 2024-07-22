@@ -21,6 +21,11 @@ const DEMO_PWD: &str = "demo";
 
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
+    info!(
+        "{:<12} - init_dev_db() - {:?}",
+        "FOR-DEV-ONLY",
+        env::current_dir().expect("Can not get current dir")
+    );
 
     let current_dir = env::current_dir()?;
     let v: Vec<_> = current_dir.components().collect();
@@ -30,7 +35,9 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     } else {
         current_dir.clone()
     };
+    info!("{:<12} - init_dev_db() - {:?}", "FOR-DEV-ONLY", base_dir);
     let sql_dir = base_dir.join(SQL_DIR);
+    info!("{:<12} - init_dev_db() - {:?}", "FOR-DEV-ONLY", sql_dir);
 
     // Create the database pool
     {
