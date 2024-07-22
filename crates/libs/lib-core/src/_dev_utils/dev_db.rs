@@ -1,3 +1,4 @@
+use crate::core_config;
 use crate::ctx::Ctx;
 use crate::model::psql::user::{User, UserBmc};
 use crate::model::psql::ModelManager;
@@ -10,10 +11,6 @@ use std::{env, fs};
 use tracing::info;
 
 type Db = Pool<Postgres>;
-
-// Note: The database URL is hardcoded for preventing the deployed system database from updating
-const PG_DEV_POSTGRES_URL: &str = "postgres://dev:dev@localhost:5432/dev";
-const PG_DEV_APP_URL: &str = "postgres://dev_app:dev_app@localhost:5432/dev_app";
 
 // sql file path from the project root
 const SQL_RECREATE_DB: &str = "00-recreate-db.sql";
@@ -38,7 +35,8 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     // Create the database pool
     {
         let sql_recreate_db_file = sql_dir.join(SQL_RECREATE_DB);
-        let root_db = new_dev_db_pool(PG_DEV_POSTGRES_URL).await?;
+        let pg_dev_postgres_url = &core_config().PSQL_DB_URL_DEV;
+        let root_db = new_dev_db_pool(pg_dev_postgres_url).await?;
         p_exec(&root_db, &sql_recreate_db_file).await?;
     }
 
@@ -49,7 +47,8 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     paths.sort();
 
     // SQL Execution
-    let app_db = new_dev_db_pool(PG_DEV_APP_URL).await?;
+    let pg_dev_app_url = &core_config().PSQL_DB_URL;
+    let app_db = new_dev_db_pool(pg_dev_app_url).await?;
     for path in paths {
         let path_str = path.to_string_lossy();
 

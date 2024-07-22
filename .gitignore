@@ -2,5 +2,6 @@
 /target/
 axum_backend.iml
 .idea
+.vscode
 vcs.xml
 /.cargo/

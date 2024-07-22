@@ -14,6 +14,7 @@ pub fn core_config() -> &'static CoreConfig {
 pub struct CoreConfig {
     // -- PostgresSQL Db
     pub PSQL_DB_URL: String,
+    pub PSQL_DB_URL_DEV: String,
 
     // -- Scylla Db
     pub SCYLLA_DB_URL: String,
@@ -28,7 +29,8 @@ impl CoreConfig {
     fn load_from_env() -> lib_utils::envs::Result<CoreConfig> {
         Ok(CoreConfig {
             // -- Postgresql Db
-            PSQL_DB_URL: get_env("SERVICE_POSTGRESQL_DB_URL")?,
+            PSQL_DB_URL: get_env("SERVICE_PG_DEV_APP_URL")?,
+            PSQL_DB_URL_DEV: get_env("SERVICE_PG_DEV_POSTGRES_URL")?,
 
             // -- Scylla Db
             SCYLLA_DB_URL: get_env("SERVICE_SCYLLA_DB_URL")?,

@@ -17,7 +17,8 @@ RUST_LOG = "web_server=debug,web_socket=debug,sse_service=debug,lib_core=debug,l
 
 SERVICE_WEB_SERVER_URL = "127.0.0.1:3000"
 
-SERVICE_POSTGRESQL_DB_URL = "postgres://dev_app:dev_app@localhost/dev_app"
+SERVICE_PG_DEV_POSTGRES_URL = "postgres://dev:dev@localhost:5432/dev"
+SERVICE_PG_DEV_APP_URL = "postgres://dev_app:dev_app@localhost:5432/dev_app"
 
 SERVICE_SCYLLA_DB_URL = "127.0.0.1:9042"
 SERVICE_SCYLLA_DB_USER = "cassandra"
