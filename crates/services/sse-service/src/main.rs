@@ -122,7 +122,7 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
         .fallback_service(static_files_service)
         // Route the request to the SSE handler
         .route(
-            "/sse-",
+            "/sse",
             get(move |user_agent| sse_handler(user_agent, tx.clone())),
         )
         .layer(TraceLayer::new_for_http())
