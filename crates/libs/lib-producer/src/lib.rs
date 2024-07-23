@@ -1,3 +1,4 @@
+mod config;
 mod hn;
 pub mod token;
 
@@ -41,7 +42,7 @@ async fn send_to_kafka<T: serde::Serialize>(
 }
 
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
-    let producer = create_producer("localhost:9092")?;
+    let producer = create_producer("")?;
 
     // HN stories task
     let hn_producer = producer.clone();
@@ -69,7 +70,7 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error>> {
-    let producer = create_producer("localhost:9092")?;
+    let producer = create_producer(&config::producer_config().KAFKA_BOOTSTRAP_SERVERS)?;
 
     //Bitcoin info task
     let bitcoin_producer = producer.clone();

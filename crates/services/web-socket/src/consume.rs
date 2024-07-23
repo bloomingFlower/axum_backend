@@ -1,3 +1,5 @@
+mod config;
+
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::Message;
@@ -13,7 +15,7 @@ pub struct MyMessage {
 pub async fn consume_msg(tx: broadcast::Sender<MyMessage>) {
     let consumer: BaseConsumer = ClientConfig::new()
         .set("group_id", "ws_group")
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", &config::consumer_config().KAFKA_BOOTSTRAP_SERVERS)
         .set("auto.offset.reset", "earliest")
         .create()
         .expect("WS Consumer creation failed");

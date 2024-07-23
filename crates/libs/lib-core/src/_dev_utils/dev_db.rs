@@ -21,23 +21,13 @@ const DEMO_PWD: &str = "demo";
 
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
-    info!(
-        "{:<12} - init_dev_db() - {:?}",
-        "FOR-DEV-ONLY",
-        env::current_dir().expect("Can not get current dir")
-    );
 
-    let current_dir = env::current_dir()?;
-    let v: Vec<_> = current_dir.components().collect();
-    let path_comp = v.get(v.len().wrapping_sub(3));
-    let base_dir = if Some(true) == path_comp.map(|c| c.as_os_str() == "crates") {
-        v[..v.len() - 3].iter().collect::<PathBuf>()
-    } else {
-        current_dir.clone()
-    };
-    info!("{:<12} - init_dev_db() - {:?}", "FOR-DEV-ONLY", base_dir);
-    let sql_dir = base_dir.join(SQL_DIR);
-    info!("{:<12} - init_dev_db() - {:?}", "FOR-DEV-ONLY", sql_dir);
+    // Find the project root directory
+    let project_root = find_project_root()?;
+    info!("{:<12} - Project root: {:?}", "FOR-DEV-ONLY", project_root);
+
+    let sql_dir = project_root.join(SQL_DIR);
+    info!("{:<12} - SQL directory: {:?}", "FOR-DEV-ONLY", sql_dir);
 
     // Create the database pool
     {
@@ -97,4 +87,20 @@ async fn new_dev_db_pool(db_conn_url: &str) -> Result<Db, sqlx::Error> {
         .acquire_timeout(Duration::from_millis(500))
         .connect(db_conn_url)
         .await
+}
+
+// New function to find the project root
+fn find_project_root() -> Result<PathBuf, Box<dyn Error>> {
+    let mut current_dir = env::current_dir()?;
+
+    loop {
+        // Check for a common project file/directory, e.g., Cargo.toml or .git
+        if current_dir.join("Cargo.toml").exists() || current_dir.join(".git").exists() {
+            return Ok(current_dir);
+        }
+
+        if !current_dir.pop() {
+            return Err("Could not find project root".into());
+        }
+    }
 }
