@@ -91,16 +91,39 @@ async fn new_dev_db_pool(db_conn_url: &str) -> Result<Db, sqlx::Error> {
 
 // New function to find the project root
 fn find_project_root() -> Result<PathBuf, Box<dyn Error>> {
-    let mut current_dir = env::current_dir()?;
+    // First, check environment variable
+    if let Ok(project_root) = env::var("PROJECT_ROOT") {
+        let path = PathBuf::from(project_root);
+        if path.exists() {
+            return Ok(path);
+        }
+    }
 
+    // Check common container application root directories
+    let possible_roots = vec!["/app", "/usr/src/app", "/home/app", "/opt/app"];
+
+    for root in possible_roots {
+        let path = PathBuf::from(root);
+        if is_project_root(&path) {
+            return Ok(path);
+        }
+    }
+
+    // Check current directory and parents
+    let mut current_dir = env::current_dir()?;
     loop {
-        // Check for a common project file/directory, e.g., Cargo.toml or .git
-        if current_dir.join("Cargo.toml").exists() || current_dir.join(".git").exists() {
+        if is_project_root(&current_dir) {
             return Ok(current_dir);
         }
-
         if !current_dir.pop() {
             return Err("Could not find project root".into());
         }
     }
+}
+
+fn is_project_root(path: &Path) -> bool {
+    path.join("Cargo.toml").exists()
+        || path.join(".git").exists()
+        || path.join("sql").exists()
+        || path.join("crates").exists()
 }
