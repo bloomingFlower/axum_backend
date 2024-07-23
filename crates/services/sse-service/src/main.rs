@@ -13,6 +13,7 @@ use lib_producer::produce_bitcoin_info;
 use lib_producer::token::BitcoinInfo;
 use rdkafka::message::Message;
 use std::env;
+use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::SystemTime;
 use std::{convert::Infallible, path::PathBuf, time::Duration};
@@ -21,7 +22,7 @@ use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::config::consume_config;
+use crate::config::sse_config;
 
 /// /// Main function to initialize the SSE service
 /// 1. Initialize tracing subscriber for logging
@@ -30,7 +31,7 @@ use crate::config::consume_config;
 /// 4. Spawn a task to consume data from Kafka and broadcast it
 /// 5. Create and run the Axum application
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing subscriber
     tracing_subscriber::registry()
         .with(
@@ -87,17 +88,26 @@ async fn main() {
     // Create the Axum application
     let app = app(tx);
 
-    // Run the application
-    let listener = tokio::net::TcpListener::bind(&consume_config().SSE_SERVER_URL)
-        .await
-        .unwrap();
-    // Log the address the server is listening on
-    debug!(
-        "--> SSE Service: listening on {}",
-        listener.local_addr().unwrap()
-    );
-    // Serve the Axum application
-    axum::serve(listener, app).await.unwrap();
+    // Parsing the server URL
+    let server_url = &sse_config().SSE_SERVER_URL;
+    let addr = server_url
+        .to_socket_addrs()
+        .expect("Invalid server address")
+        .next()
+        .expect("Failed to resolve server address");
+
+    info!("Binding to address: {:?}", addr);
+
+    // TcpListener binding
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+
+    // Logging the bound address
+    info!("Listening on {}", listener.local_addr()?);
+
+    // Run the server
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
 
 /// Parse the Bitcoin information from the message
