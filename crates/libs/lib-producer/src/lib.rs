@@ -12,6 +12,7 @@ use tokio::time::interval;
 use tracing::{debug, error, info};
 
 fn create_producer(host: &str) -> KafkaResult<FutureProducer> {
+    info!("--> Kafka Producer: Creating producer");
     ClientConfig::new().set("bootstrap.servers", host).create()
 }
 
@@ -71,22 +72,27 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
 
 pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error>> {
     let producer = create_producer(&config::producer_config().KAFKA_BOOTSTRAP_SERVERS)?;
-
+    info!("--> Kafka Info Producer: Producer created");
     //Bitcoin info task
     let bitcoin_producer = producer.clone();
     tokio::spawn(async move {
+        info!("--> Kafka Info Producer: Spawned");
         let mut interval = interval(Duration::from_secs(3600 * 24 / 30)); // 하루에 30번 호출 (약 48분마다)
         loop {
             interval.tick().await;
             match token::fetch_bitcoin_info().await {
                 Ok(bitcoin_info) => {
+                    info!("--> Kafka Info Producer: Fetched Bitcoin info");
                     if let Err(e) =
                         send_to_kafka(&bitcoin_producer, "token", "Bitcoin", &bitcoin_info).await
                     {
                         error!("--> Kafka Producer: Failed to send Bitcoin info: {:?}", e);
                     }
                 }
-                Err(e) => error!("--> Kafka Producer: Failed to fetch Bitcoin info: {:?}", e),
+                Err(e) => error!(
+                    "--> Kafka Info Producer: Failed to fetch Bitcoin info: {:?}",
+                    e
+                ),
             }
         }
     });

@@ -38,7 +38,7 @@ pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
     let client = Client::new();
     let api_key = env::var("COINGECKO_API_KEY").expect("COINGECKO_API_KEY must be set");
     let url = format!("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&x_cg_demo_api_key={}", api_key);
-
+    info!("--> Coingecko: Fetching Bitcoin info from {}", url);
     let response = client
         .get(url)
         .send()

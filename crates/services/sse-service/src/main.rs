@@ -62,27 +62,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get Data from Kafka
     // Spawn a new task to consume data from Kafka and broadcast it
     tokio::spawn(async move {
+        info!("--> SSE Service: Spawning task to consume data from Kafka");
         // Get the message stream from the Kafka consumer
         let message_stream = consume_stream("token").await;
         // Check if the message stream is Ok
         if let Ok(mut message_stream) = message_stream {
+            info!("--> SSE Service: Message stream received");
             // Consume messages from the stream and send them to the broadcast channel
             while let Some(message_result) = message_stream.next().await {
                 // Check if the message is Ok
                 if let Ok(message) = message_result {
                     // Check if the message has a payload
                     if let Some(payload) = message.payload() {
+                        info!("--> SSE Service: Message received: {:?}", payload);
                         // Parse the Bitcoin information from the payload
                         if let Ok(bitcoin_info) =
                             parse_bitcoin_info(String::from_utf8_lossy(payload).to_string())
                         {
+                            info!("--> SSE Service: Bitcoin info parsed: {:?}", bitcoin_info);
                             // Send the Bitcoin information to the broadcast channel
                             let _ = tx_clone.send(bitcoin_info);
+                            info!("--> SSE Service: Bitcoin info sent to broadcast channel");
                         }
                     }
                 }
             }
         }
+        info!("--> SSE Service: Task to consume data from Kafka completed");
     });
 
     // Create the Axum application
