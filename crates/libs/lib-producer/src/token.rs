@@ -2,6 +2,7 @@ use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::env;
+use tracing::info;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BitcoinInfo {
@@ -47,7 +48,7 @@ pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
 
     let response_size = serde_json::to_string(&response)?.len();
     // For debugging
-    println!("Response size: {}", response_size);
+    info!("Response size: {} bytes", response_size);
 
     response
         .into_iter()
