@@ -45,6 +45,10 @@ pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
         .json::<Vec<BitcoinInfo>>()
         .await?;
 
+    let response_size = serde_json::to_string(&response)?.len();
+    // For debugging
+    println!("Response size: {}", response_size);
+
     response
         .into_iter()
         .next()
