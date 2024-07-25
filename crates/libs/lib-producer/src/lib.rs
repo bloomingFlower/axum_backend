@@ -70,32 +70,50 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let producer = create_producer(&config::producer_config().KAFKA_BOOTSTRAP_SERVERS)?;
     info!("--> Kafka Info Producer: Producer created");
-    //Bitcoin info task
     let bitcoin_producer = producer.clone();
     tokio::spawn(async move {
         info!("--> Kafka Info Producer: Spawned");
-        let mut interval = interval(Duration::from_secs(3600 * 24 / 30)); // 하루에 30번 호출 (약 48분마다)
+        let mut interval = interval(Duration::from_secs(3600 * 24 / 30));
         loop {
             interval.tick().await;
-            match token::fetch_bitcoin_info().await {
-                Ok(bitcoin_info) => {
-                    info!("--> Kafka Info Producer: Fetched Bitcoin info");
-                    if let Err(e) =
-                        send_to_kafka(&bitcoin_producer, "token", "Bitcoin", &bitcoin_info).await
-                    {
-                        error!("--> Kafka Producer: Failed to send Bitcoin info: {:?}", e);
+            let max_retries = 3;
+            let mut retry_count = 0;
+            while retry_count < max_retries {
+                match fetch_and_send_bitcoin_info(&bitcoin_producer).await {
+                    Ok(_) => break,
+                    Err(e) => {
+                        error!(
+                            "--> Kafka Info Producer: Attempt {} failed: {:?}",
+                            retry_count + 1,
+                            e
+                        );
+                        retry_count += 1;
+                        if retry_count < max_retries {
+                            tokio::time::sleep(Duration::from_secs(5)).await;
+                        }
                     }
                 }
-                Err(e) => error!(
-                    "--> Kafka Info Producer: Failed to fetch Bitcoin info: {:?}",
-                    e
-                ),
+            }
+            if retry_count == max_retries {
+                error!(
+                    "--> Kafka Info Producer: Failed after {} attempts",
+                    max_retries
+                );
             }
         }
     });
 
+    Ok(())
+}
+
+async fn fetch_and_send_bitcoin_info(
+    producer: &FutureProducer,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let bitcoin_info = token::fetch_bitcoin_info().await?;
+    info!("--> Kafka Info Producer: Fetched Bitcoin info");
+    send_to_kafka(producer, "token", "Bitcoin", &bitcoin_info).await?;
     Ok(())
 }

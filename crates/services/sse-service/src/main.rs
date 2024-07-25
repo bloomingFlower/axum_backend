@@ -1,6 +1,7 @@
 mod config;
 
 use axum::{
+    http::HeaderValue,
     response::sse::{Event, KeepAlive, Sse},
     response::IntoResponse,
     routing::get,
@@ -9,6 +10,7 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::{self};
 use futures::StreamExt;
+use lib_consumer::consume_latest_message;
 use lib_consumer::consume_stream;
 use lib_producer::produce_bitcoin_info;
 use lib_producer::token::BitcoinInfo;
@@ -19,7 +21,7 @@ use std::sync::Arc;
 use std::{convert::Infallible, path::PathBuf};
 use tokio::sync::broadcast;
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::sse_config;
@@ -162,7 +164,23 @@ async fn sse_handler(
 
     let rx = tx.subscribe();
 
-    let stream = stream::unfold(rx, move |mut rx| async move {
+    // Get the latest message from Kafka
+    let latest_info = match consume_latest_message("token").await {
+        Ok(Some(info)) => info,
+        Ok(None) => {
+            info!("--> SSE Handler: No latest message found in Kafka");
+            BitcoinInfo::default()
+        }
+        Err(e) => {
+            error!("--> SSE Handler: Error fetching latest message: {:?}", e);
+            BitcoinInfo::default()
+        }
+    };
+
+    let stream = stream::once(async move {
+        Ok(Event::default().data(serde_json::to_string(&latest_info).unwrap()))
+    })
+    .chain(stream::unfold(rx, move |mut rx| async move {
         match rx.recv().await {
             Ok(bitcoin_info) => {
                 let info_with_details = BitcoinInfoWithDetails {
@@ -173,29 +191,25 @@ async fn sse_handler(
                     price_change_24h: bitcoin_info.price_change_24h,
                     price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
                 };
-
                 let info_str = serde_json::to_string(&info_with_details).unwrap();
                 let event = Event::default().data(info_str);
 
                 info!("--> SSE Handler: Sending update: {:?}", info_with_details);
-                Some((Ok::<Event, Infallible>(event), rx))
+                Some((Ok::<_, Infallible>(event), rx))
             }
             Err(e) => {
                 info!("--> SSE Handler: Error receiving message: {:?}", e);
-                Some((
-                    Ok::<Event, Infallible>(Event::default().data("Error receiving message")),
-                    rx,
-                ))
+                None
             }
         }
-    });
+    }));
 
     let sse = Sse::new(stream).keep_alive(KeepAlive::default());
 
     (
         [(
             axum::http::header::CONTENT_TYPE,
-            axum::http::HeaderValue::from_static("text/event-stream"),
+            HeaderValue::from_static("text/event-stream"),
         )],
         sse,
     )

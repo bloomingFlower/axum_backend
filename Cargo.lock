@@ -1329,6 +1329,7 @@ dependencies = [
  "async-stream",
  "futures",
  "lib-core",
+ "lib-producer",
  "lib-utils",
  "log",
  "rdkafka",

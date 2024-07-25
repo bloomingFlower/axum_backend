@@ -34,6 +34,39 @@ pub struct BitcoinInfo {
     pub last_updated: String,
 }
 
+impl Default for BitcoinInfo {
+    fn default() -> Self {
+        BitcoinInfo {
+            id: "bitcoin".to_string(),
+            symbol: "btc".to_string(),
+            name: "Bitcoin".to_string(),
+            image: "".to_string(),
+            current_price: 0.0,
+            market_cap: 0,
+            market_cap_rank: 0,
+            fully_diluted_valuation: None,
+            total_volume: 0.0,
+            high_24h: 0.0,
+            low_24h: 0.0,
+            price_change_24h: 0.0,
+            price_change_percentage_24h: 0.0,
+            market_cap_change_24h: 0.0,
+            market_cap_change_percentage_24h: 0.0,
+            circulating_supply: 0.0,
+            total_supply: None,
+            max_supply: None,
+            ath: 0.0,
+            ath_change_percentage: 0.0,
+            ath_date: "".to_string(),
+            atl: 0.0,
+            atl_change_percentage: 0.0,
+            atl_date: "".to_string(),
+            roi: None,
+            last_updated: "".to_string(),
+        }
+    }
+}
+
 pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
     let client = Client::new();
     let api_key = env::var("COINGECKO_API_KEY").expect("COINGECKO_API_KEY must be set");

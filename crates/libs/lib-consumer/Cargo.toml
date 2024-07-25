@@ -10,8 +10,9 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-lib-core  = { path = "../../libs/lib-core"}
-lib-utils = { path = "../../libs/lib-utils"}
+lib-core = { path = "../../libs/lib-core" }
+lib-utils = { path = "../../libs/lib-utils" }
+lib-producer = { path = "../../libs/lib-producer" }
 
 tokio = { version = "1.36.0", features = ["full"] }
 rdkafka = { version = "0.36.2", features = ["cmake-build"] }
