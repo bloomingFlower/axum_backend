@@ -1,12 +1,13 @@
 mod config;
 
 use axum::{
-    response::sse::{Event, Sse},
+    response::sse::{Event, KeepAlive, Sse},
+    response::IntoResponse,
     routing::get,
     Router,
 };
 use axum_extra::TypedHeader;
-use futures::stream::{self, Stream};
+use futures::stream::{self};
 use futures::StreamExt;
 use lib_consumer::consume_stream;
 use lib_producer::produce_bitcoin_info;
@@ -74,7 +75,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Ok(message) = message_result {
                     // Check if the message has a payload
                     if let Some(payload) = message.payload() {
-                        info!("--> SSE Service: Message received: {:?}", payload);
                         // Parse the Bitcoin information from the payload
                         if let Ok(bitcoin_info) =
                             parse_bitcoin_info(String::from_utf8_lossy(payload).to_string())
@@ -144,60 +144,56 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
         .layer(TraceLayer::new_for_http())
 }
 
-// BitcoinInfoWithCountdown struct
+// BitcoinInfoWithDetails struct
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-struct BitcoinInfoWithCountdown {
+struct BitcoinInfoWithDetails {
     price: f64,
-    countdown: i64,
+    last_updated: String,
+    high_24h: f64,
+    low_24h: f64,
+    price_change_24h: f64,
+    price_change_percentage_24h: f64,
 }
 
 async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     tx: Arc<broadcast::Sender<BitcoinInfo>>,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+) -> impl IntoResponse {
     info!("--> SSE Handler: `{}` connected", user_agent.as_str());
 
     let rx = tx.subscribe();
 
-    let stream = stream::unfold(
-        (rx, SystemTime::now()),
-        move |(mut rx, last_update)| async move {
-            tokio::time::sleep(Duration::from_secs(1)).await;
+    let stream = stream::unfold(rx, move |mut rx| async move {
+        match rx.recv().await {
+            Ok(bitcoin_info) => {
+                let info_with_details = BitcoinInfoWithDetails {
+                    price: bitcoin_info.current_price,
+                    last_updated: bitcoin_info.last_updated,
+                    high_24h: bitcoin_info.high_24h,
+                    low_24h: bitcoin_info.low_24h,
+                    price_change_24h: bitcoin_info.price_change_24h,
+                    price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
+                };
 
-            match rx.recv().await {
-                Ok(bitcoin_info) => {
-                    let now = SystemTime::now();
-                    let elapsed = now
-                        .duration_since(last_update)
-                        .unwrap_or(Duration::from_secs(0));
-                    let countdown = 300_i64.saturating_sub(elapsed.as_secs() as i64);
+                let info_str = serde_json::to_string(&info_with_details).unwrap();
+                let event = Event::default().data(info_str);
 
-                    let info_with_countdown = BitcoinInfoWithCountdown {
-                        price: bitcoin_info.current_price,
-                        countdown,
-                    };
-
-                    let info_str = serde_json::to_string(&info_with_countdown).unwrap();
-                    let event = Event::default().data(info_str);
-
-                    info!("--> SSE Handler: Sending update: {:?}", info_with_countdown);
-                    Some((
-                        Ok(event),
-                        (rx, if countdown == 0 { now } else { last_update }),
-                    ))
-                }
-                Err(e) => {
-                    info!("--> SSE Handler: Error receiving message: {:?}", e);
-                    Some((
-                        Ok(Event::default().data("Error receiving message")),
-                        (rx, last_update),
-                    ))
-                }
+                info!("--> SSE Handler: Sending update: {:?}", info_with_details);
+                Some((Ok::<Event, Infallible>(event), rx))
             }
-        },
-    );
+            Err(e) => {
+                info!("--> SSE Handler: Error receiving message: {:?}", e);
+                Some((
+                    Ok::<Event, Infallible>(Event::default().data("Error receiving message")),
+                    rx,
+                ))
+            }
+        }
+    });
 
-    Sse::new(stream)
+    let response = Sse::new(stream).keep_alive(KeepAlive::default());
+    info!("--> SSE Handler: Sending response: {:?}", response);
+    response
 }
 
 #[cfg(test)]
