@@ -16,8 +16,7 @@ use rdkafka::message::Message;
 use std::env;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use std::time::SystemTime;
-use std::{convert::Infallible, path::PathBuf, time::Duration};
+use std::{convert::Infallible, path::PathBuf};
 use tokio::sync::broadcast;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{debug, info};
@@ -191,9 +190,15 @@ async fn sse_handler(
         }
     });
 
-    let response = Sse::new(stream).keep_alive(KeepAlive::default());
-    info!("--> SSE Handler: Sending response: {:?}", response);
-    response
+    let sse = Sse::new(stream).keep_alive(KeepAlive::default());
+
+    (
+        [(
+            axum::http::header::CONTENT_TYPE,
+            axum::http::HeaderValue::from_static("text/event-stream"),
+        )],
+        sse,
+    )
 }
 
 #[cfg(test)]
