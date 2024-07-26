@@ -20,7 +20,11 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::{convert::Infallible, path::PathBuf};
 use tokio::sync::broadcast;
-use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    services::ServeDir,
+    trace::TraceLayer,
+};
 use tracing::{debug, error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -133,6 +137,13 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
     // Append index.html to the directory path if the request is for a directory
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
+
+    // CORS configuration
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     // Build the application with a route
     Router::new()
         // Fallback to the static files service if the request is for a directory
@@ -143,6 +154,7 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
             get(move |user_agent| sse_handler(user_agent, tx.clone())),
         )
         .layer(TraceLayer::new_for_http())
+        .layer(cors) // Add CORS middleware
 }
 
 // BitcoinInfoWithDetails struct

@@ -5,10 +5,9 @@ use lib_core::model::scylla::hnstory::add_hnstory;
 use lib_core::model::scylla::hnstory::HNStory;
 use lib_producer::token::BitcoinInfo;
 use rdkafka::error::KafkaError;
-use rdkafka::Offset;
+use tokio::time::{timeout, Duration};
 
 use std::pin::Pin;
-use std::time::Duration;
 
 use futures::stream::Stream;
 
@@ -20,6 +19,7 @@ use rdkafka::message::Headers; // for the `next` method
 use rdkafka::message::OwnedMessage;
 use rdkafka::metadata::Metadata;
 use rdkafka::Message;
+use rdkafka::Offset;
 
 use tracing::{debug, error, info};
 
@@ -35,13 +35,14 @@ pub fn create_consumer() -> KafkaResult<StreamConsumer> {
         .set("enable.partition.eof", "false")
         .set("enable.auto.commit", "true")
         .set("socket.timeout.ms", "4000")
-        .set("auto.offset.reset", "earliest")
+        .set("auto.offset.reset", "latest")
         .set("fetch.min.bytes", "1")
         .set("session.timeout.ms", "60000")
         .set("heartbeat.interval.ms", "20000")
         .set("max.poll.interval.ms", "600000")
         .set("reconnect.backoff.max.ms", "30000")
         .set("reconnect.backoff.ms", "2000")
+        .set("allow.auto.create.topics", "true")
         // .set_log_level(RDKafkaLogLevel::Debug)
         // .set("debug", "all")
         .create()
@@ -54,7 +55,8 @@ pub async fn consume(topic_name: &str) {
         topic_name
     );
     // Create a Kafka consumer
-    let consumer: StreamConsumer = create_consumer().expect("Consumer creation failed");
+    let consumer: StreamConsumer =
+        create_consumer().expect("--> Kafka Consumer: Consumer creation failed");
 
     // Define the topics to subscribe to
     let topics = vec![topic_name];
@@ -62,10 +64,12 @@ pub async fn consume(topic_name: &str) {
     // Subscribe to the specified topics
     consumer
         .subscribe(topics.as_slice())
-        .expect("Can't subscribe to specified topics");
+        .expect("--> Kafka Consumer: Can't subscribe to specified topics");
 
     // Get the subscription details
-    let subscription = consumer.subscription().expect("Failed to get subscription");
+    let subscription = consumer
+        .subscription()
+        .expect("--> Kafka Consumer: Failed to get subscription");
     info!("--> Kafka Consumer: Subscribed to the following topics:");
     for topic in subscription.elements() {
         println!("  - {}", topic.topic());
@@ -75,7 +79,9 @@ pub async fn consume(topic_name: &str) {
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // Create a ScyllaDB session
-    let session = db_conn().await.expect("Failed to create ScyllaDB session");
+    let session = db_conn()
+        .await
+        .expect("--> Kafka Consumer: Failed to create ScyllaDB session");
 
     // Infinite loop to continuously consume messages
     loop {
@@ -92,7 +98,10 @@ pub async fn consume(topic_name: &str) {
                     Some(Ok(s)) => s,
                     // if payload is not empty, but error, return empty string
                     Some(Err(e)) => {
-                        error!("Error while deserializing message payload: {:?}", e);
+                        error!(
+                            "--> Kafka Consumer: Error while deserializing message payload: {:?}",
+                            e
+                        );
                         ""
                     }
                 };
@@ -118,10 +127,13 @@ pub async fn consume(topic_name: &str) {
                     match serde_json::from_str::<HNStory>(payload) {
                         Ok(hnstory) => {
                             if let Err(e) = add_hnstory(&session, hnstory).await {
-                                error!("Failed to add {}: {}", m.topic(), e);
+                                error!("--> Kafka Consumer: Failed to add {}: {}", m.topic(), e);
                             }
                         }
-                        Err(e) => error!("Failed to parse hnstory from payload: {}", e),
+                        Err(e) => error!(
+                            "--> Kafka Consumer: Failed to parse hnstory from payload: {}",
+                            e
+                        ),
                     }
                 }
 
@@ -174,9 +186,12 @@ pub async fn list_topics() -> KafkaResult<()> {
     // Fetch metadata for the topics
     let metadata: Metadata = consumer.fetch_metadata(None, Some(Duration::from_secs(5)))?;
 
-    info!("list of topic size: {}", metadata.topics().len());
+    info!(
+        "--> Kafka Consumer: list of topic size: {}",
+        metadata.topics().len()
+    );
     for topic in metadata.topics() {
-        info!("topic name: {}", topic.name());
+        info!("--> Kafka Consumer: topic name: {}", topic.name());
     }
 
     // Consume messages from the "hnstories" topic
@@ -187,79 +202,147 @@ pub async fn list_topics() -> KafkaResult<()> {
 }
 
 pub async fn consume_latest_message(topic: &str) -> Result<Option<BitcoinInfo>, KafkaError> {
-    let max_retries = 5;
-    let retry_delay = Duration::from_secs(10);
-
-    for attempt in 0..max_retries {
-        match try_consume_latest_message(topic).await {
-            Ok(result) => return Ok(result),
-            Err(e) => {
-                error!(
-                    "Attempt {}/{}: Failed to consume message: {}",
-                    attempt + 1,
-                    max_retries,
-                    e
-                );
-                if attempt == max_retries - 1 {
-                    return Err(e);
-                }
-                tokio::time::sleep(retry_delay).await;
-            }
-        }
-    }
-    Err(KafkaError::Subscription("Max retries reached".to_string()))
-}
-
-async fn try_consume_latest_message(topic: &str) -> Result<Option<BitcoinInfo>, KafkaError> {
     let consumer: StreamConsumer = create_consumer()?;
     consumer.subscribe(&[topic])?;
 
-    let timeout = Duration::from_secs(60);
-    let mut retry_count = 0;
-    let max_retries = 5;
+    info!(
+        "--> Kafka Consumer: Consuming latest message from topic: {}",
+        topic
+    );
 
-    while retry_count < max_retries {
-        match consumer.fetch_watermarks(topic, 0, timeout) {
+    // 메타데이터 가져오기
+    let metadata = consumer.fetch_metadata(Some(topic), Duration::from_secs(10))?;
+    let partitions = metadata
+        .topics()
+        .first()
+        .map(|t| t.partitions().len())
+        .unwrap_or(0);
+
+    for partition in 0..partitions {
+        match consumer.fetch_watermarks(topic, partition as i32, Duration::from_secs(10)) {
             Ok((_, high_watermark)) => {
-                info!("High watermark: {}", high_watermark);
+                info!(
+                    "--> Kafka Consumer: Partition {}, High watermark: {}",
+                    partition, high_watermark
+                );
                 if high_watermark > 0 {
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                    match consumer.seek(topic, 0, Offset::Offset(high_watermark - 1), timeout) {
-                        Ok(_) => match tokio::time::timeout(timeout, consumer.recv()).await {
-                            Ok(Ok(message)) => {
-                                if let Some(payload) = message.payload() {
-                                    let bitcoin_info: BitcoinInfo = serde_json::from_slice(payload)
-                                        .map_err(|e| KafkaError::ClientCreation(e.to_string()))?;
-                                    return Ok(Some(bitcoin_info));
-                                }
-                            }
-                            Ok(Err(e)) => info!("Failed to receive message: {:?}", e),
-                            Err(_) => info!("Timeout while receiving message"),
-                        },
-                        Err(e) => {
-                            info!("Seek error: {:?}", e);
-                            tokio::time::sleep(Duration::from_secs(1)).await;
-                        }
-                    }
-                } else {
-                    // If no new message, consume the latest available message
-                    match tokio::time::timeout(timeout, consumer.recv()).await {
+                    // 마지막 오프셋으로 이동
+                    consumer.seek(
+                        topic,
+                        partition as i32,
+                        Offset::Offset(high_watermark - 1),
+                        Duration::from_secs(10),
+                    )?;
+
+                    // 메시지 수신 시도
+                    match tokio::time::timeout(Duration::from_secs(5), consumer.recv()).await {
                         Ok(Ok(message)) => {
                             if let Some(payload) = message.payload() {
-                                let bitcoin_info: BitcoinInfo = serde_json::from_slice(payload)
-                                    .map_err(|e| KafkaError::ClientCreation(e.to_string()))?;
-                                return Ok(Some(bitcoin_info));
+                                match serde_json::from_slice::<BitcoinInfo>(payload) {
+                                    Ok(bitcoin_info) => return Ok(Some(bitcoin_info)),
+                                    Err(e) => error!(
+                                        "--> Kafka Consumer: Failed to deserialize message: {:?}",
+                                        e
+                                    ),
+                                }
                             }
                         }
-                        Ok(Err(e)) => info!("Failed to receive message: {:?}", e),
-                        Err(_) => info!("Timeout while receiving message"),
+                        Ok(Err(e)) => {
+                            error!("--> Kafka Consumer: Failed to receive message: {:?}", e)
+                        }
+                        Err(_) => error!("--> Kafka Consumer: Timeout while receiving message"),
                     }
                 }
             }
-            Err(e) => info!("Failed to fetch watermarks: {:?}", e),
+            Err(e) => error!(
+                "--> Kafka Consumer: Failed to fetch watermarks for partition {}: {:?}",
+                partition, e
+            ),
         }
-        retry_count += 1;
-        tokio::time::sleep(Duration::from_secs(1)).await;
     }
+
+    info!("--> Kafka Consumer: No valid messages found");
     Ok(None)
 }
+
+// async fn try_consume_latest_message(topic: &str) -> Result<Option<BitcoinInfo>, KafkaError> {
+//     // 컨슈머 생성 및 토픽 구독
+//     let consumer: StreamConsumer = create_consumer()?;
+//     consumer.subscribe(&[topic])?;
+
+//     let timeout = Duration::from_secs(60);
+//     let mut retry_count = 0;
+//     let max_retries = 5;
+
+//     // 메타데이터 가져오기
+//     let metadata = consumer.fetch_metadata(Some(topic), timeout)?;
+//     let partitions = metadata
+//         .topics()
+//         .first()
+//         .map(|t| t.partitions().len())
+//         .unwrap_or(0);
+
+//     while retry_count < max_retries {
+//         info!(
+//             "--> Kafka Consumer: Attempt {} of {}",
+//             retry_count + 1,
+//             max_retries
+//         );
+
+//         // 모든 파티션에 대해 시도
+//         for partition in 0..partitions {
+//             match consumer.fetch_watermarks(topic, partition as i32, timeout) {
+//                 Ok((_, high_watermark)) => {
+//                     info!(
+//                         "--> Kafka Consumer: Partition {}, High watermark: {}",
+//                         partition, high_watermark
+//                     );
+//                     if high_watermark > 0 {
+//                         // 마지막 오프셋으로 이동
+//                         if let Err(e) = consumer.seek(
+//                             topic,
+//                             partition as i32,
+//                             Offset::Offset(high_watermark - 1),
+//                             timeout,
+//                         ) {
+//                             error!("--> Kafka Consumer: Failed to seek to offset {} in partition {}: {:?}", high_watermark - 1, partition, e);
+//                             continue;
+//                         }
+
+//                         // 메시지 수신 시도
+//                         match tokio::time::timeout(timeout, consumer.recv()).await {
+//                             Ok(Ok(message)) => {
+//                                 if let Some(payload) = message.payload() {
+//                                     match serde_json::from_slice::<BitcoinInfo>(payload) {
+//                                         Ok(bitcoin_info) => return Ok(Some(bitcoin_info)),
+//                                         Err(e) => error!("--> Kafka Consumer: Failed to deserialize message: {:?}", e),
+//                                     }
+//                                 }
+//                             }
+//                             Ok(Err(e)) => {
+//                                 error!("--> Kafka Consumer: Failed to receive message: {:?}", e)
+//                             }
+//                             Err(_) => error!("--> Kafka Consumer: Timeout while receiving message"),
+//                         }
+//                     }
+//                 }
+//                 Err(e) => error!(
+//                     "--> Kafka Consumer: Failed to fetch watermarks for partition {}: {:?}",
+//                     partition, e
+//                 ),
+//             }
+//         }
+
+//         retry_count += 1;
+//         if retry_count < max_retries {
+//             info!("--> Kafka Consumer: Retrying in 1 second...");
+//             tokio::time::sleep(Duration::from_secs(1)).await;
+//         }
+//     }
+
+//     info!(
+//         "--> Kafka Consumer: No valid messages found after {} attempts",
+//         max_retries
+//     );
+//     Ok(None)
+// }

@@ -14,32 +14,29 @@ eventSource.onmessage = function (event) {
   console.log("Message from server:", event.data);
   const data = JSON.parse(event.data);
 
+  // Helper function to safely format numbers
+  const safeFormat = (value, decimals = 2) => {
+    return typeof value === 'number' ? value.toFixed(decimals) : 'Loading...';
+  };
+
   // Update price
-  priceElement.textContent = `$${data.price.toFixed(2)}`;
+  priceElement.textContent = `$${safeFormat(data.price)}`;
 
   // Update details
   detailsElement.innerHTML = `
-        <p>Last Updated: ${new Date(data.last_updated).toLocaleString()}</p>
-        <p>24h High: $${data.high_24h.toFixed(
-          2
-        )} | 24h Low: $${data.low_24h.toFixed(2)}</p>
-        <p>24h Change: $${data.price_change_24h.toFixed(
-          2
-        )} (${data.price_change_percentage_24h.toFixed(2)}%)</p>
+        <p>Last Updated: ${new Date(data.last_updated || Date.now()).toLocaleString()}</p>
+        <p>24h High: $${safeFormat(data.high_24h)} | 24h Low: $${safeFormat(data.low_24h)}</p>
+        <p>24h Change: $${safeFormat(data.price_change_24h)} (${safeFormat(data.price_change_percentage_24h)}%)</p>
     `;
 
   // Add to message history
   const messageElement = document.createElement("div");
   messageElement.className = "message";
   messageElement.innerHTML = `
-        <h3>Price: $${data.price.toFixed(2)}</h3>
-        <p>Updated: ${new Date(data.last_updated).toLocaleString()}</p>
-        <p>24h Range: $${data.low_24h.toFixed(2)} - $${data.high_24h.toFixed(
-    2
-  )}</p>
-        <p>24h Change: $${data.price_change_24h.toFixed(
-          2
-        )} (${data.price_change_percentage_24h.toFixed(2)}%)</p>
+        <h3>Price: $${safeFormat(data.price)}</h3>
+        <p>Updated: ${new Date(data.last_updated || Date.now()).toLocaleString()}</p>
+        <p>24h Range: $${safeFormat(data.low_24h)} - $${safeFormat(data.high_24h)}</p>
+        <p>24h Change: $${safeFormat(data.price_change_24h)} (${safeFormat(data.price_change_percentage_24h)}%)</p>
     `;
   messagesElement.insertBefore(messageElement, messagesElement.firstChild);
 
