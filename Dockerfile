@@ -30,7 +30,11 @@ RUN apt-get update && \
     libssl-dev ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+# Set PROJECT_ROOT environment variable
+ENV PROJECT_ROOT=/usr/src/app
+
 COPY --from=builder /usr/src/app/target/release/web-server /usr/local/bin/web-server
+COPY --from=builder /usr/src/app/sql /usr/src/app/sql
 
 CMD ["web-server"]
 EXPOSE 3000
@@ -43,7 +47,11 @@ RUN apt-get update && \
     libssl-dev ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+# Set PROJECT_ROOT environment variable
+ENV PROJECT_ROOT=/usr/src/app
+
 COPY --from=builder /usr/src/app/target/release/sse-service /usr/local/bin/sse-service
+COPY --from=builder /usr/src/app/sql /usr/src/app/sql
 
 CMD ["sse-service"]
 EXPOSE 3001

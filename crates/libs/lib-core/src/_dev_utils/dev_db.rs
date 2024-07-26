@@ -118,7 +118,7 @@ fn find_project_root() -> Result<PathBuf, Box<dyn Error>> {
     }
 
     // Check common container application root directories
-    let possible_roots = vec!["/app", "/usr/src/app", "/home/app", "/opt/app"];
+    let possible_roots = vec!["/usr/src/app", "/app", "/home/app", "/opt/app"];
 
     for root in possible_roots {
         let path = PathBuf::from(root);
@@ -127,16 +127,8 @@ fn find_project_root() -> Result<PathBuf, Box<dyn Error>> {
         }
     }
 
-    // Check current directory and parents
-    let mut current_dir = env::current_dir()?;
-    loop {
-        if is_project_root(&current_dir) {
-            return Ok(current_dir);
-        }
-        if !current_dir.pop() {
-            return Err("Could not find project root. Make sure you're running the application from within the project directory or set the PROJECT_ROOT environment variable.".into());
-        }
-    }
+    // If all else fails, use the current directory
+    env::current_dir().map_err(|e| e.into())
 }
 
 fn is_project_root(path: &Path) -> bool {
