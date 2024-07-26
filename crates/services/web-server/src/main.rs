@@ -15,12 +15,15 @@ use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
 use lib_core::model::psql::ModelManager;
 
+use axum::http::{HeaderValue, Method};
 use axum::routing::get;
 use axum::{middleware, Router};
+use http::header;
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_cookies::CookieManagerLayer;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -50,12 +53,17 @@ async fn main() -> Result<()> {
     // Initialize the Model Manager and wait for it to be ready
     let mm = ModelManager::new().await?;
 
-    // Initialize the new Router with the Hello Routes
-    // let routes_hello = Router::new()
-    //     // Http and DB operations should be async
-    //     .route("/hello", get(|| async { Html("Hello World") }))
-    //     // Check ctx and token
-    //     .route_layer(middleware::from_fn(mw_require_auth));
+    // Configure CORS
+    let cors = CorsLayer::new()
+        .allow_origin(vec![
+            "http://localhost:8080".parse::<HeaderValue>().unwrap(),
+            "https://blog.yourrubber.duckdns.org"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        ])
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+        .allow_credentials(true);
 
     let routes_rpc =
         routes_rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
@@ -74,6 +82,8 @@ async fn main() -> Result<()> {
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
+        // Add CORS middleware
+        .layer(cors)
         // Add HNStory routes
         .route("/hnstories", get(routes_hnstory::list_hnstories))
         .route("/hnstories/:id", get(routes_hnstory::get_hnstory))

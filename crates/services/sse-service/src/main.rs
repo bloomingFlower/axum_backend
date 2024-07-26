@@ -1,6 +1,7 @@
 mod config;
 
 use axum::{
+    http::{HeaderValue, Method},
     response::sse::{Event, KeepAlive, Sse},
     response::IntoResponse,
     routing::get,
@@ -8,6 +9,7 @@ use axum::{
 };
 use axum_extra::TypedHeader;
 use futures::{stream, StreamExt};
+use http::header;
 use lib_consumer::{consume_stream, get_cached_message};
 use lib_producer::produce_bitcoin_info;
 use lib_producer::token::BitcoinInfo;
@@ -17,11 +19,7 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::{convert::Infallible, path::PathBuf};
 use tokio::sync::broadcast;
-use tower_http::{
-    cors::{Any, CorsLayer},
-    services::ServeDir,
-    trace::TraceLayer,
-};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -161,9 +159,15 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
     // CORS configuration
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(vec![
+            "http://localhost:8080".parse::<HeaderValue>().unwrap(),
+            "https://blog.yourrubber.duckdns.org"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        ])
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+        .allow_credentials(true);
 
     // Build the application with a route
     Router::new()
