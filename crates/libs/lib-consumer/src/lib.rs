@@ -5,9 +5,9 @@ use lib_core::model::scylla::hnstory::add_hnstory;
 use lib_core::model::scylla::hnstory::HNStory;
 use lib_producer::token::BitcoinInfo;
 
-use once_cell::sync::Lazy;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
@@ -25,7 +25,8 @@ use rdkafka::Timestamp;
 use tracing::{debug, error, info};
 
 // Global cache to store the last received message
-static LAST_MESSAGE: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static LAST_MESSAGE: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
 
 // Function to update the cache with the latest message
 async fn update_cache(message: String) {
