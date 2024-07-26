@@ -1,17 +1,14 @@
 mod config;
 
 use axum::{
-    http::HeaderValue,
     response::sse::{Event, KeepAlive, Sse},
     response::IntoResponse,
     routing::get,
     Router,
 };
 use axum_extra::TypedHeader;
-use futures::stream::{self};
-use futures::StreamExt;
-use lib_consumer::consume_latest_message;
-use lib_consumer::consume_stream;
+use futures::{stream, StreamExt};
+use lib_consumer::{consume_stream, get_cached_message};
 use lib_producer::produce_bitcoin_info;
 use lib_producer::token::BitcoinInfo;
 use rdkafka::message::Message;
@@ -25,7 +22,7 @@ use tower_http::{
     services::ServeDir,
     trace::TraceLayer,
 };
-use tracing::{debug, error, info};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::sse_config;
@@ -90,6 +87,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             info!("--> SSE Service: Bitcoin info sent to broadcast channel");
                         }
                     }
+                } else {
+                    // If there's an error getting a new message, try to use the cached message
+                    if let Some(cached_message) = get_cached_message().await {
+                        if let Ok(bitcoin_info) = parse_bitcoin_info(cached_message) {
+                            info!(
+                                "--> SSE Service: Using cached Bitcoin info: {:?}",
+                                bitcoin_info
+                            );
+                            let _ = tx_clone.send(bitcoin_info);
+                            info!("--> SSE Service: Cached Bitcoin info sent to broadcast channel");
+                        }
+                    }
+                }
+            }
+        } else {
+            info!("--> SSE Service: Failed to get message stream, using cached message");
+            // If we couldn't get a message stream, try to use the cached message
+            if let Some(cached_message) = get_cached_message().await {
+                if let Ok(bitcoin_info) = parse_bitcoin_info(cached_message) {
+                    info!(
+                        "--> SSE Service: Using cached Bitcoin info: {:?}",
+                        bitcoin_info
+                    );
+                    let _ = tx_clone.send(bitcoin_info);
+                    info!("--> SSE Service: Cached Bitcoin info sent to broadcast channel");
                 }
             }
         }
@@ -137,7 +159,6 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
     // Append index.html to the directory path if the request is for a directory
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
-
     // CORS configuration
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -168,6 +189,12 @@ struct BitcoinInfoWithDetails {
     price_change_percentage_24h: f64,
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct SSEMessage {
+    status: String,
+    data: Option<BitcoinInfoWithDetails>,
+}
+
 async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     tx: Arc<broadcast::Sender<BitcoinInfo>>,
@@ -176,21 +203,52 @@ async fn sse_handler(
 
     let rx = tx.subscribe();
 
-    // Get the latest message from Kafka
-    let latest_info = match consume_latest_message("token").await {
-        Ok(Some(info)) => info,
-        Ok(None) => {
-            info!("--> SSE Handler: No latest message found in Kafka");
-            BitcoinInfo::default()
-        }
-        Err(e) => {
-            error!("--> SSE Handler: Error fetching latest message: {:?}", e);
-            BitcoinInfo::default()
-        }
-    };
-
+    // Create a stream that first sends the cached data, then listens for updates
     let stream = stream::once(async move {
-        Ok(Event::default().data(serde_json::to_string(&latest_info).unwrap()))
+        // Try to get the cached message first
+        match get_cached_message().await {
+            Some(cached_message) => match parse_bitcoin_info(cached_message) {
+                Ok(bitcoin_info) => {
+                    let info_with_details = BitcoinInfoWithDetails {
+                        price: bitcoin_info.current_price,
+                        last_updated: bitcoin_info.last_updated,
+                        high_24h: bitcoin_info.high_24h,
+                        low_24h: bitcoin_info.low_24h,
+                        price_change_24h: bitcoin_info.price_change_24h,
+                        price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
+                    };
+
+                    let sse_message = SSEMessage {
+                        status: "success".to_string(),
+                        data: Some(info_with_details),
+                    };
+
+                    let info_str = serde_json::to_string(&sse_message).unwrap();
+                    let event = Event::default().data(info_str);
+
+                    info!("--> SSE Handler: Sending cached update: {:?}", sse_message);
+                    Ok::<Event, Infallible>(event)
+                }
+                Err(e) => {
+                    info!("--> SSE Handler: Failed to parse cached message: {:?}", e);
+                    let waiting_message = SSEMessage {
+                        status: "waiting".to_string(),
+                        data: None,
+                    };
+                    let waiting_str = serde_json::to_string(&waiting_message).unwrap();
+                    Ok::<Event, Infallible>(Event::default().data(waiting_str))
+                }
+            },
+            None => {
+                info!("--> SSE Handler: No cached data available");
+                let waiting_message = SSEMessage {
+                    status: "waiting".to_string(),
+                    data: None,
+                };
+                let waiting_str = serde_json::to_string(&waiting_message).unwrap();
+                Ok::<Event, Infallible>(Event::default().data(waiting_str))
+            }
+        }
     })
     .chain(stream::unfold(rx, move |mut rx| async move {
         match rx.recv().await {
@@ -203,15 +261,29 @@ async fn sse_handler(
                     price_change_24h: bitcoin_info.price_change_24h,
                     price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
                 };
-                let info_str = serde_json::to_string(&info_with_details).unwrap();
+
+                let sse_message = SSEMessage {
+                    status: "success".to_string(),
+                    data: Some(info_with_details),
+                };
+
+                let info_str = serde_json::to_string(&sse_message).unwrap();
                 let event = Event::default().data(info_str);
 
-                info!("--> SSE Handler: Sending update: {:?}", info_with_details);
-                Some((Ok::<_, Infallible>(event), rx))
+                info!("--> SSE Handler: Sending update: {:?}", sse_message);
+                Some((Ok::<Event, Infallible>(event), rx))
             }
             Err(e) => {
                 info!("--> SSE Handler: Error receiving message: {:?}", e);
-                None
+                let error_message = SSEMessage {
+                    status: "error".to_string(),
+                    data: None,
+                };
+                let error_str = serde_json::to_string(&error_message).unwrap();
+                Some((
+                    Ok::<Event, Infallible>(Event::default().data(error_str)),
+                    rx,
+                ))
             }
         }
     }));
@@ -221,7 +293,7 @@ async fn sse_handler(
     (
         [(
             axum::http::header::CONTENT_TYPE,
-            HeaderValue::from_static("text/event-stream"),
+            axum::http::HeaderValue::from_static("text/event-stream"),
         )],
         sse,
     )

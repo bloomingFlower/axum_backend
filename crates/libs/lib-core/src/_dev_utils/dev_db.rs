@@ -4,11 +4,12 @@ use crate::model::psql::user::{User, UserBmc};
 use crate::model::psql::ModelManager;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
+use std::env;
 use std::error::Error;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use std::{env, fs};
-use tracing::info;
+use tracing::{error, info};
 
 type Db = Pool<Postgres>;
 
@@ -22,8 +23,25 @@ const DEMO_PWD: &str = "demo";
 pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     info!("{:<12} - init_dev_db()", "FOR-DEV-ONLY");
 
+    // Log the current working directory
+    let current_dir = env::current_dir()?;
+    info!(
+        "{:<12} - Current working directory: {:?}",
+        "FOR-DEV-ONLY", current_dir
+    );
+
     // Find the project root directory
-    let project_root = find_project_root()?;
+    let project_root = match find_project_root() {
+        Ok(root) => root,
+        Err(e) => {
+            // Log the error and return it
+            error!(
+                "{:<12} - Failed to find project root: {}",
+                "FOR-DEV-ONLY", e
+            );
+            return Err(e);
+        }
+    };
     info!("{:<12} - Project root: {:?}", "FOR-DEV-ONLY", project_root);
 
     let sql_dir = project_root.join(SQL_DIR);
@@ -116,7 +134,7 @@ fn find_project_root() -> Result<PathBuf, Box<dyn Error>> {
             return Ok(current_dir);
         }
         if !current_dir.pop() {
-            return Err("Could not find project root".into());
+            return Err("Could not find project root. Make sure you're running the application from within the project directory or set the PROJECT_ROOT environment variable.".into());
         }
     }
 }
