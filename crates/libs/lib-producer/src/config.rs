@@ -1,13 +1,13 @@
 use lib_utils::envs::get_env;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
+
+pub static PRODUCER_CONFIG: LazyLock<ProducerConfig> = LazyLock::new(|| {
+    ProducerConfig::load_from_env()
+        .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
+});
 
 pub fn producer_config() -> &'static ProducerConfig {
-    static INSTANCE: OnceLock<ProducerConfig> = OnceLock::new();
-
-    INSTANCE.get_or_init(|| {
-        ProducerConfig::load_from_env()
-            .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
-    })
+    &PRODUCER_CONFIG
 }
 
 #[allow(non_snake_case)]
