@@ -24,7 +24,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        rust: [1.80.0, stable]
     services:
       postgres:
         image: postgres:16.3
