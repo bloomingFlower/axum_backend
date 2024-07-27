@@ -7,7 +7,7 @@ use crate::config::auth_config;
 use crate::pwd::ContentToHash;
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 pub struct Scheme02;
 
@@ -37,13 +37,13 @@ impl Scheme for Scheme02 {
 }
 
 fn get_argon2() -> &'static Argon2<'static> {
-    static INSTANCE: OnceLock<Argon2<'static>> = OnceLock::new();
-
-    INSTANCE.get_or_init(|| {
+    static INSTANCE: LazyLock<Argon2<'static>> = LazyLock::new(|| {
         let key = &auth_config().PWD_KEY;
         Argon2::new_with_secret(key, Algorithm::Argon2id, Version::V0x13, Params::default())
-            .unwrap() // FIXME
-    })
+            .expect("Failed to initialize Argon2")
+    });
+
+    &INSTANCE
 }
 
 #[cfg(test)]

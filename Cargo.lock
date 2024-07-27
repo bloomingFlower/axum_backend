@@ -1332,13 +1332,11 @@ dependencies = [
  "lib-producer",
  "lib-utils",
  "log",
- "once_cell",
  "rdkafka",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
