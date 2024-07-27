@@ -20,9 +20,6 @@ pub struct CoreConfig {
     pub SCYLLA_DB_URL: String,
     pub SCYLLA_DB_USERNAME: String,
     pub SCYLLA_DB_PASSWORD: String,
-
-    // -- Web
-    pub WEB_FOLDER: String,
 }
 
 impl CoreConfig {
@@ -36,9 +33,6 @@ impl CoreConfig {
             SCYLLA_DB_URL: get_env("SERVICE_SCYLLA_DB_URL")?,
             SCYLLA_DB_USERNAME: get_env("SERVICE_SCYLLA_DB_USER")?,
             SCYLLA_DB_PASSWORD: get_env("SERVICE_SCYLLA_DB_PASSWORD")?,
-
-            // -- Web
-            WEB_FOLDER: get_env("SERVICE_WEB_FOLDER")?,
         })
     }
 }

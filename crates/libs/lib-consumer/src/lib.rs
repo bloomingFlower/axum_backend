@@ -66,7 +66,8 @@ pub async fn consume(topic_name: &str) {
         topic_name
     );
     // Create a Kafka consumer
-    let consumer: StreamConsumer = create_consumer().expect("Consumer creation failed");
+    let consumer: StreamConsumer =
+        create_consumer().expect("--> Kafka Consumer: Consumer creation failed");
 
     // Define the topics to subscribe to
     let topics = vec![topic_name];
@@ -74,10 +75,12 @@ pub async fn consume(topic_name: &str) {
     // Subscribe to the specified topics
     consumer
         .subscribe(topics.as_slice())
-        .expect("Can't subscribe to specified topics");
+        .expect("--> Kafka Consumer: Can't subscribe to specified topics");
 
     // Get the subscription details
-    let subscription = consumer.subscription().expect("Failed to get subscription");
+    let subscription = consumer
+        .subscription()
+        .expect("--> Kafka Consumer: Failed to get subscription");
     info!("--> Kafka Consumer: Subscribed to the following topics:");
     for topic in subscription.elements() {
         println!("  - {}", topic.topic());
@@ -87,7 +90,9 @@ pub async fn consume(topic_name: &str) {
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // Create a ScyllaDB session
-    let session = db_conn().await.expect("Failed to create ScyllaDB session");
+    let session = db_conn()
+        .await
+        .expect("--> Kafka Consumer: Failed to create ScyllaDB session");
 
     // Infinite loop to continuously consume messages
     loop {
@@ -104,7 +109,10 @@ pub async fn consume(topic_name: &str) {
                     Some(Ok(s)) => s,
                     // if payload is not empty, but error, return empty string
                     Some(Err(e)) => {
-                        error!("Error while deserializing message payload: {:?}", e);
+                        error!(
+                            "--> Kafka Consumer: Error while deserializing message payload: {:?}",
+                            e
+                        );
                         ""
                     }
                 };
@@ -176,16 +184,16 @@ pub async fn consume_stream(
                     if let Some(payload) = msg.payload() {
                         if let Ok(bitcoin_info) = serde_json::from_slice::<BitcoinInfo>(payload) {
                             update_cache(serde_json::to_string(&bitcoin_info).unwrap()).await;
-                            info!("Cache updated with new message: {:?}", bitcoin_info);
+                            info!("--> Kafka Consumer: Cache updated with new message: {:?}", bitcoin_info);
                         }
                     }
                     yield Ok(msg.detach())
                 },
                 Err(e) => {
-                    error!("Error receiving message: {:?}", e);
+                    error!("--> Kafka Consumer: Error receiving message: {:?}", e);
                     if let Some(cached_message) = get_cached_message().await {
                         if let Ok(bitcoin_info) = serde_json::from_str::<BitcoinInfo>(&cached_message) {
-                            info!("Using cached Bitcoin info: {:?}", bitcoin_info);
+                            info!("--> Kafka Consumer: Using cached Bitcoin info: {:?}", bitcoin_info);
                             let owned_message = OwnedMessage::new(
                                 None, // key
                                 Some(cached_message.into_bytes()), // payload
@@ -218,9 +226,12 @@ pub async fn list_topics() -> KafkaResult<()> {
     // Fetch metadata for the topics
     let metadata: Metadata = consumer.fetch_metadata(None, Some(Duration::from_secs(5)))?;
 
-    info!("list of topic size: {}", metadata.topics().len());
+    info!(
+        "--> Kafka Consumer: list of topic size: {}",
+        metadata.topics().len()
+    );
     for topic in metadata.topics() {
-        info!("topic name: {}", topic.name());
+        info!("--> Kafka Consumer: topic name: {}", topic.name());
     }
 
     // Consume messages from the "hnstories" topic

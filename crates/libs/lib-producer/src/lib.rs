@@ -43,7 +43,7 @@ async fn send_to_kafka<T: serde::Serialize>(
 }
 
 pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
-    let producer = create_producer("")?;
+    let producer = create_producer(&config::producer_config().KAFKA_BOOTSTRAP_SERVERS)?;
 
     // HN stories task
     let hn_producer = producer.clone();
