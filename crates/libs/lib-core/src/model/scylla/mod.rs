@@ -27,9 +27,8 @@ pub async fn db_conn() -> Result<Session> {
 
     // Initialize the database
     hnstory::initialize(&session).await?;
-    info!(
-        "--> Scylla: Connected to scylla db at {} with username {}",
-        uri, username
-    );
+
+    info!("--> Scylla: Connected to scylla db");
+
     Ok(session)
 }

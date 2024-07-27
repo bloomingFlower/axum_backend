@@ -48,7 +48,7 @@ pub async fn produce() -> Result<(), Box<dyn std::error::Error>> {
     // HN stories task
     let hn_producer = producer.clone();
     tokio::spawn(async move {
-        let mut interval = interval(Duration::from_secs(60));
+        let mut interval = interval(Duration::from_secs(600));
         loop {
             interval.tick().await;
             match hn::fetch_hn_stories("Rust".into(), 10).await {

@@ -51,6 +51,10 @@ pub async fn init_dev_db() -> Result<(), Box<dyn Error>> {
     {
         let sql_recreate_db_file = sql_dir.join(SQL_RECREATE_DB);
         let pg_dev_postgres_url = &core_config().PSQL_DB_URL_DEV;
+        info!(
+            "{:<12} - PSQL_DB_URL_DEV: {:?}",
+            "FOR-DEV-ONLY", pg_dev_postgres_url
+        );
         let root_db = new_dev_db_pool(pg_dev_postgres_url).await?;
         p_exec(&root_db, &sql_recreate_db_file).await?;
     }

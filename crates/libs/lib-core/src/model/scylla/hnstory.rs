@@ -1,6 +1,6 @@
 use scylla::{FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::Path, path::PathBuf};
 
 use crate::model::scylla::result::Result;
 
@@ -102,14 +102,37 @@ pub async fn select_all_hnstories_with_pagination(
 }
 
 fn read_sql_file(file_name: &str) -> Result<String> {
-    let current_dir = std::env::current_dir()?;
-    let v: Vec<_> = current_dir.components().collect();
-    let path_comp = v.get(v.len().wrapping_sub(3));
-    let base_dir = if Some(true) == path_comp.map(|c| c.as_os_str() == "crates") {
-        v[..v.len() - 3].iter().collect::<PathBuf>()
-    } else {
-        current_dir.clone()
-    };
-    let sql_file_path = base_dir.join(SQL_DIR).join(file_name);
+    let project_root = find_project_root()?;
+    let sql_file_path = project_root.join(SQL_DIR).join(file_name);
     fs::read_to_string(sql_file_path).map_err(From::from)
+}
+
+fn find_project_root() -> Result<PathBuf> {
+    // First, check environment variable
+    if let Ok(project_root) = env::var("PROJECT_ROOT") {
+        let path = PathBuf::from(project_root);
+        if path.exists() {
+            return Ok(path);
+        }
+    }
+
+    // Check common container application root directories
+    let possible_roots = vec!["/usr/src/app", "/app", "/home/app", "/opt/app"];
+
+    for root in possible_roots {
+        let path = PathBuf::from(root);
+        if is_project_root(&path) {
+            return Ok(path);
+        }
+    }
+
+    // If all else fails, use the current directory
+    env::current_dir().map_err(From::from)
+}
+
+fn is_project_root(path: &Path) -> bool {
+    path.join("Cargo.toml").exists()
+        || path.join(".git").exists()
+        || path.join("sql").exists()
+        || path.join("crates").exists()
 }
