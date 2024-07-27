@@ -1,13 +1,13 @@
 use lib_utils::envs::get_env;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
+
+pub static CORE_CONFIG: LazyLock<CoreConfig> = LazyLock::new(|| {
+    CoreConfig::load_from_env()
+        .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
+});
 
 pub fn core_config() -> &'static CoreConfig {
-    static INSTANCE: OnceLock<CoreConfig> = OnceLock::new();
-
-    INSTANCE.get_or_init(|| {
-        CoreConfig::load_from_env()
-            .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
-    })
+    &CORE_CONFIG
 }
 
 #[allow(non_snake_case)]

@@ -1,13 +1,13 @@
 use lib_utils::envs::{get_env_b64u_as_u8s, get_env_parse};
-use std::sync::OnceLock;
+use std::sync::LazyLock;
+
+pub static AUTH_CONFIG: LazyLock<AuthConfig> = LazyLock::new(|| {
+    AuthConfig::load_from_env()
+        .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
+});
 
 pub fn auth_config() -> &'static AuthConfig {
-    static INSTANCE: OnceLock<AuthConfig> = OnceLock::new();
-
-    INSTANCE.get_or_init(|| {
-        AuthConfig::load_from_env()
-            .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
-    })
+    &AUTH_CONFIG
 }
 
 #[allow(non_snake_case)]

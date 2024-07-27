@@ -1,13 +1,13 @@
 use lib_utils::envs::get_env;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
+
+pub static SSE_CONFIG: LazyLock<SseConfig> = LazyLock::new(|| {
+    SseConfig::load_from_env()
+        .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
+});
 
 pub fn sse_config() -> &'static SseConfig {
-    static INSTANCE: OnceLock<SseConfig> = OnceLock::new();
-
-    INSTANCE.get_or_init(|| {
-        SseConfig::load_from_env()
-            .unwrap_or_else(|ex| panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}"))
-    })
+    &SSE_CONFIG
 }
 
 #[allow(non_snake_case)]
