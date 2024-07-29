@@ -15,15 +15,16 @@ use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
 use lib_core::model::psql::ModelManager;
 
-use axum::http::{HeaderValue, Method};
-use axum::routing::get;
+use axum::http::Method;
+use axum::routing::{get, options};
 use axum::{middleware, Router};
-use http::header;
+use http::Request;
 use lib_core::_dev_utils;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -55,21 +56,35 @@ async fn main() -> Result<()> {
 
     // Configure CORS
     let cors = CorsLayer::new()
-        .allow_origin(vec![
-            "http://localhost:8080".parse::<HeaderValue>().unwrap(),
-            "https://blog.yourrubber.duckdns.org"
-                .parse::<HeaderValue>()
-                .unwrap(),
+        .allow_origin(Any) // Allow all origins for development
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
         ])
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
-        .allow_credentials(true);
+        .allow_headers(Any) // Allow all headers
+        .allow_credentials(false); // Disable credentials
+
+    let trace_layer = TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+        let path = request.uri().path();
+        if path.starts_with("/api") {
+            tracing::info_span!("API request", path = %path)
+        } else {
+            tracing::info_span!("Request", path = %path)
+        }
+    });
 
     let routes_rpc =
         routes_rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
 
     // Initialize the Router with all the routes
     let routes_all = Router::new()
+        // Add CORS middleware first
+        .layer(cors)
+        // Add tracing layer for debugging
+        .layer(trace_layer)
         // Merge the Login Routes
         .merge(routes_login::routes(mm.clone()))
         // Merge the Hello Routes
@@ -82,11 +97,14 @@ async fn main() -> Result<()> {
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
-        // Add CORS middleware
-        .layer(cors)
         // Add HNStory routes
-        .route("/hnstories", get(routes_hnstory::list_hnstories))
-        .route("/hnstories/:id", get(routes_hnstory::get_hnstory))
+        .nest(
+            "/api/v2",
+            Router::new()
+                .route("/hnstories", get(routes_hnstory::list_hnstories))
+                .route("/hnstories/:id", get(routes_hnstory::get_hnstory))
+                .route("/hnstories", options(|| async { /* Empty response */ })),
+        )
         // Add a fallback service to serve static files
         .fallback_service(routes_static::serve_dir());
 
