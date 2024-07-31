@@ -11,10 +11,10 @@ use tracing::{debug, error};
 
 #[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList, Serialize)]
 pub struct HNStory {
-    pub author: String,
     #[serde(alias = "objectID")]
     pub id: String,
     pub title: String,
+    pub author: String,
     pub url: Option<String>,
     pub story_text: Option<String>,
     #[serde(alias = "_tags")]
@@ -134,20 +134,27 @@ pub async fn select_all_hnstories_with_pagination(
             paging_state.and_then(|ps| ps.into_bytes().ok()),
         )
         .await?;
-    debug!("--> HNStory: Query result: {:?}", result);
 
-    // Convert rows to HNStory instances with improved error handling
+    // Convert rows to HNStory instances with improved error handling and logging
     let stories: Vec<HNStory> = result
         .rows
         .unwrap_or_default()
         .into_typed::<HNStory>()
-        .collect::<std::result::Result<Vec<HNStory>, _>>()
-        .map_err(|e| {
-            error!("Error converting row to HNStory: {:?}", e);
-            Error::from(e)
-        })?;
+        .map(|row_result| match row_result {
+            Ok(story) => {
+                debug!("Successfully parsed HNStory: {:?}", story);
+                Ok(story)
+            }
+            Err(e) => {
+                error!("Error converting row to HNStory: {:?}", e);
+                Err(Error::from(e))
+            }
+        })
+        .collect::<Result<Vec<HNStory>>>()?;
 
     let new_paging_state = result.paging_state.as_ref().map(PagingState::from_bytes);
+
+    debug!("--> HNStory: stories: {:?}", stories);
 
     Ok((stories, new_paging_state))
 }
