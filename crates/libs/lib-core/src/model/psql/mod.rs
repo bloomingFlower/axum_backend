@@ -10,16 +10,17 @@ pub mod user;
 pub use self::error::{Error, Result};
 // Database Field
 use crate::model::psql::store::{new_db_pool, Db};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct ModelManager {
-    db: Db,
+    db: Arc<Db>,
 }
 
 impl ModelManager {
     /// Create Constructor
     pub async fn new() -> Result<Self> {
-        let db = new_db_pool().await?;
+        let db = Arc::new(new_db_pool().await?);
         Ok(ModelManager { db })
     }
 

@@ -17,6 +17,8 @@ pub enum Error {
     // -- Modules
     #[from]
     Model(model::psql::Error),
+    #[from]
+    Scylla(model::scylla::Error),
 }
 
 impl core::fmt::Display for Error {

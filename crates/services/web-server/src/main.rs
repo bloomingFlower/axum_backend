@@ -14,20 +14,20 @@ use crate::web::mw_res_map::main_response_mapper;
 use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
 use lib_core::model::psql::ModelManager;
+use lib_core::model::scylla::{initialize as initialize_scylla, ScyllaManager};
 
-use axum::http::Method;
-use axum::routing::{get, options};
+use axum::http::{HeaderMap, HeaderValue, Method};
 use axum::{middleware, Router};
 use http::Request;
 use lib_core::_dev_utils;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-
 /// Tokio Runtime Entry Point
 #[tokio::main]
 /// Async Main Function that returns a Result
@@ -54,9 +54,22 @@ async fn main() -> Result<()> {
     // Initialize the Model Manager and wait for it to be ready
     let mm = ModelManager::new().await?;
 
+    // Initialize the Scylla Manager
+    let sm: Arc<ScyllaManager> = ScyllaManager::new().await?;
+
+    // Initialize Scylla tables
+    initialize_scylla(sm.session())
+        .await
+        .map_err(|e| Error::Scylla(e))?;
+
     // Configure CORS
     let cors = CorsLayer::new()
-        .allow_origin(Any) // Allow all origins for development
+        .allow_origin([
+            "http://localhost:8080".parse::<HeaderValue>().unwrap(),
+            "https://blog.yourrubber.duckdns.org"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        ]) // .allow_origin(Any)
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -64,8 +77,8 @@ async fn main() -> Result<()> {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers(Any) // Allow all headers
-        .allow_credentials(false); // Disable credentials
+        .allow_headers([http::header::CONTENT_TYPE])
+        .allow_credentials(true);
 
     let trace_layer = TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
         let path = request.uri().path();
@@ -79,10 +92,12 @@ async fn main() -> Result<()> {
     let routes_rpc =
         routes_rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
 
+    let routes_hnstory = routes_hnstory::routes(sm.clone());
+
     // Initialize the Router with all the routes
     let routes_all = Router::new()
         // Add CORS middleware first
-        .layer(cors)
+        .layer(cors.clone())
         // Add tracing layer for debugging
         .layer(trace_layer)
         // Merge the Login Routes
@@ -98,13 +113,8 @@ async fn main() -> Result<()> {
         // Add a middleware to manage cookies
         .layer(CookieManagerLayer::new())
         // Add HNStory routes
-        .nest(
-            "/api/v2",
-            Router::new()
-                .route("/hnstories", get(routes_hnstory::list_hnstories))
-                .route("/hnstories/:id", get(routes_hnstory::get_hnstory))
-                .route("/hnstories", options(|| async { /* Empty response */ })),
-        )
+        .nest("/api/v2/hnstories", routes_hnstory)
+        .layer(cors.clone())
         // Add a fallback service to serve static files
         .fallback_service(routes_static::serve_dir());
 

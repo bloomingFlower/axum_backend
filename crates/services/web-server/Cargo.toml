@@ -36,6 +36,7 @@ strum_macros = "0.26.4"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
 time = "0.3.36"
 http = "1.1.0"
+base64 = "0.22.1"
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

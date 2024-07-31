@@ -1,22 +1,35 @@
-use axum::{extract::Path, extract::Query, http::StatusCode, response::IntoResponse, Json};
-use lib_core::model::scylla::db_conn;
-use lib_core::model::scylla::hnstory::{select_all_hnstories_with_pagination, select_hnstory};
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, options},
+    Json, Router,
+};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use lib_core::model::scylla::hnstory::{
+    select_all_hnstories_with_pagination, select_hnstory, PagingState,
+};
+use lib_core::model::scylla::ScyllaManager;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tracing::{debug, error};
+
+pub fn routes(sm: Arc<ScyllaManager>) -> Router {
+    Router::new()
+        .route("/", get(list_hnstories))
+        .route("/:id", get(get_hnstory))
+        .route("/", options(handle_options))
+        .with_state(sm)
+}
 
 // HNStory select handler
-pub async fn get_hnstory(Path(id): Path<String>) -> impl IntoResponse {
-    let session = match db_conn().await {
-        Ok(session) => session,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Database connection failed",
-            )
-                .into_response()
-        }
-    };
+async fn get_hnstory(
+    State(sm): State<Arc<ScyllaManager>>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    let session = sm.session();
 
-    match select_hnstory(&session, id).await {
+    match select_hnstory(session, id).await {
         Ok(stories) => {
             if stories.is_empty() {
                 (StatusCode::NOT_FOUND, "Story not found").into_response()
@@ -35,40 +48,56 @@ pub async fn get_hnstory(Path(id): Path<String>) -> impl IntoResponse {
 // HNStory list select handler
 #[derive(Deserialize)]
 pub struct PaginationParams {
-    page: u32,
-    limit: u32,
+    page_size: u32,
+    paging_state: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct PaginatedResponse<T> {
     data: Vec<T>,
-    page: u32,
-    limit: u32,
+    next_paging_state: Option<String>,
 }
 
-pub async fn list_hnstories(Query(params): Query<PaginationParams>) -> impl IntoResponse {
-    let session = match db_conn().await {
-        Ok(session) => session,
-        Err(_) => {
-            return (
+async fn list_hnstories(
+    State(sm): State<Arc<ScyllaManager>>,
+    Query(params): Query<PaginationParams>,
+) -> impl IntoResponse {
+    debug!("--> Route_HNStory: Listing HNStories with pagination");
+    let session = sm.session();
+
+    let paging_state = params
+        .paging_state
+        .and_then(|s| BASE64.decode(&s).ok())
+        .map(PagingState);
+
+    match select_all_hnstories_with_pagination(session, params.page_size as i32, paging_state).await
+    {
+        Ok((stories, new_paging_state)) => {
+            debug!(
+                "--> Route_HNStory: Successfully retrieved {} stories",
+                stories.len()
+            );
+            let next_paging_state = new_paging_state.map(|s| BASE64.encode(&s.0));
+            Json(PaginatedResponse {
+                data: stories,
+                next_paging_state,
+            })
+            .into_response()
+        }
+        Err(e) => {
+            error!(
+                "--> Route_HNStory: Failed to retrieve stories. Error: {:?}",
+                e
+            );
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Database connection failed",
+                "Failed to retrieve stories",
             )
                 .into_response()
         }
-    };
-
-    match select_all_hnstories_with_pagination(&session, params.page, params.limit).await {
-        Ok(stories) => Json(PaginatedResponse {
-            data: stories,
-            page: params.page,
-            limit: params.limit,
-        })
-        .into_response(),
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to retrieve stories",
-        )
-            .into_response(),
     }
+}
+
+async fn handle_options() -> impl IntoResponse {
+    StatusCode::NO_CONTENT
 }

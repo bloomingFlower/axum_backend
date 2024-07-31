@@ -1,8 +1,11 @@
-use scylla::{FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList};
+use scylla::{
+    query::Query, FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList,
+};
 use serde::{Deserialize, Serialize};
 use std::{env, fs, path::Path, path::PathBuf};
 
-use crate::model::scylla::result::Result;
+use crate::model::scylla::error::{Error, Result};
+use tracing::{debug, error};
 
 #[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList, Serialize)]
 pub struct HNStory {
@@ -10,7 +13,7 @@ pub struct HNStory {
     #[serde(alias = "objectID")]
     pub id: String,
     pub title: String,
-    url: Option<String>,
+    pub url: Option<String>,
     pub story_text: Option<String>,
     #[serde(alias = "_tags")]
     pub tags: Option<Vec<String>>,
@@ -84,27 +87,55 @@ pub async fn select_all_hnstories(session: &Session) -> Result<Vec<HNStory>> {
         .collect()
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PagingState(pub Vec<u8>);
+
+use scylla::prepared_statement::PreparedStatement;
+
 pub async fn select_all_hnstories_with_pagination(
     session: &Session,
-    page: u32,
-    limit: u32,
-) -> Result<Vec<HNStory>> {
-    let offset = (page - 1) * limit;
-    let query = read_sql_file("hnstory/03-select-stories-with-pagination.sql")?;
-    session
-        .query(query, (limit as i64, offset as i64))
-        .await?
+    page_size: i32,
+    paging_state: Option<PagingState>,
+) -> Result<(Vec<HNStory>, Option<PagingState>)> {
+    debug!("--> HNStory: Selecting HNStories with pagination");
+    let query_str = read_sql_file("hnstory/03-select-stories-with-pagination.sql")?;
+
+    debug!("--> HNStory: page_size: {}", page_size);
+    debug!("--> HNStory: paging_state: {:?}", paging_state);
+
+    // Prepare the statement
+    let prepared: PreparedStatement = session
+        .prepare(Query::new(query_str).with_page_size(page_size))
+        .await?;
+    debug!("--> HNStory: prepared: {:?}", prepared);
+    let res1 = session.execute(&prepared, &[]).await?;
+    debug!("--> HNStory: res1: {:?}", res1);
+    // Execute the query
+    let result = session
+        .execute_paged(&prepared, &[], res1.paging_state)
+        .await?;
+    debug!("--> HNStory: Query result: {:?}", result);
+    // Convert rows to HNStory instances with improved error handling
+    let stories: Vec<HNStory> = result
         .rows
         .unwrap_or_default()
         .into_typed::<HNStory>()
-        .map(|v| v.map_err(From::from))
-        .collect()
+        .collect::<std::result::Result<Vec<HNStory>, _>>()
+        .map_err(|e| {
+            error!("Error converting row to HNStory: {:?}", e);
+            Error::from(e)
+        })?;
+
+    let new_paging_state = result.paging_state.map(|s| PagingState(s.to_vec()));
+
+    Ok((stories, new_paging_state))
 }
 
 fn read_sql_file(file_name: &str) -> Result<String> {
+    debug!("--> HNStory: Reading SQL file: {}", file_name);
     let project_root = find_project_root()?;
     let sql_file_path = project_root.join(SQL_DIR).join(file_name);
-    fs::read_to_string(sql_file_path).map_err(From::from)
+    fs::read_to_string(sql_file_path).map_err(Error::from)
 }
 
 fn find_project_root() -> Result<PathBuf> {
@@ -127,7 +158,7 @@ fn find_project_root() -> Result<PathBuf> {
     }
 
     // If all else fails, use the current directory
-    env::current_dir().map_err(From::from)
+    env::current_dir().map_err(Error::from)
 }
 
 fn is_project_root(path: &Path) -> bool {
