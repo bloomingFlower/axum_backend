@@ -47,6 +47,7 @@ derive_more = { version = "1.0.0-beta", features = ["from"] }
 scylla = "0.13.0"
 futures = "0.3.6"
 chrono = "0.4.0"
+base64 = "0.22.0"
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error

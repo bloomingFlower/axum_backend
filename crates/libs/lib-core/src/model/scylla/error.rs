@@ -27,6 +27,9 @@ pub enum Error {
     #[from]
     Io(#[serde_as(as = "DisplayFromStr")] io::Error),
 
+    #[from]
+    Base64(#[serde_as(as = "DisplayFromStr")] base64::DecodeError),
+
     ScyllaError(String),
 }
 

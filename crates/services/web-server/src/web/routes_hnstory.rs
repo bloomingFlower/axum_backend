@@ -65,10 +65,7 @@ async fn list_hnstories(
     debug!("--> Route_HNStory: Listing HNStories with pagination");
     let session = sm.session();
 
-    let paging_state = params
-        .paging_state
-        .and_then(|s| BASE64.decode(&s).ok())
-        .map(PagingState);
+    let paging_state = params.paging_state.map(|s| PagingState::new(s));
 
     match select_all_hnstories_with_pagination(session, params.page_size as i32, paging_state).await
     {
@@ -77,10 +74,9 @@ async fn list_hnstories(
                 "--> Route_HNStory: Successfully retrieved {} stories",
                 stories.len()
             );
-            let next_paging_state = new_paging_state.map(|s| BASE64.encode(&s.0));
             Json(PaginatedResponse {
                 data: stories,
-                next_paging_state,
+                next_paging_state: new_paging_state.map(|ps| ps.0),
             })
             .into_response()
         }

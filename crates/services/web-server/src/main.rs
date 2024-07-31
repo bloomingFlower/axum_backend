@@ -16,7 +16,7 @@ use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 use lib_core::model::psql::ModelManager;
 use lib_core::model::scylla::{initialize as initialize_scylla, ScyllaManager};
 
-use axum::http::{HeaderMap, HeaderValue, Method};
+use axum::http::{HeaderValue, Method};
 use axum::{middleware, Router};
 use http::Request;
 use lib_core::_dev_utils;

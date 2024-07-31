@@ -1,5 +1,7 @@
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use scylla::{
-    query::Query, FromRow, IntoTypedRows, SerializeRow, Session, SessionBuilder, ValueList,
+    prepared_statement::PreparedStatement, query::Query, Bytes, FromRow, IntoTypedRows,
+    SerializeRow, Session, SessionBuilder, ValueList,
 };
 use serde::{Deserialize, Serialize};
 use std::{env, fs, path::Path, path::PathBuf};
@@ -88,9 +90,24 @@ pub async fn select_all_hnstories(session: &Session) -> Result<Vec<HNStory>> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PagingState(pub Vec<u8>);
+pub struct PagingState(pub String);
 
-use scylla::prepared_statement::PreparedStatement;
+impl PagingState {
+    pub fn new(encoded: String) -> Self {
+        PagingState(encoded)
+    }
+
+    pub fn from_bytes(bytes: &Bytes) -> Self {
+        PagingState(BASE64.encode(bytes))
+    }
+
+    pub fn into_bytes(&self) -> Result<Bytes> {
+        BASE64
+            .decode(&self.0)
+            .map(Bytes::from)
+            .map_err(|e| Error::Base64(e))
+    }
+}
 
 pub async fn select_all_hnstories_with_pagination(
     session: &Session,
@@ -108,13 +125,17 @@ pub async fn select_all_hnstories_with_pagination(
         .prepare(Query::new(query_str).with_page_size(page_size))
         .await?;
     debug!("--> HNStory: prepared: {:?}", prepared);
-    let res1 = session.execute(&prepared, &[]).await?;
-    debug!("--> HNStory: res1: {:?}", res1);
-    // Execute the query
+
+    // Execute the query with paging state
     let result = session
-        .execute_paged(&prepared, &[], res1.paging_state)
+        .execute_paged(
+            &prepared,
+            &[],
+            paging_state.and_then(|ps| ps.into_bytes().ok()),
+        )
         .await?;
     debug!("--> HNStory: Query result: {:?}", result);
+
     // Convert rows to HNStory instances with improved error handling
     let stories: Vec<HNStory> = result
         .rows
@@ -126,7 +147,7 @@ pub async fn select_all_hnstories_with_pagination(
             Error::from(e)
         })?;
 
-    let new_paging_state = result.paging_state.map(|s| PagingState(s.to_vec()));
+    let new_paging_state = result.paging_state.as_ref().map(PagingState::from_bytes);
 
     Ok((stories, new_paging_state))
 }
