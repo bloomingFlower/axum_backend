@@ -38,14 +38,16 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       kafka:
-        image: wurstmeister/kafka:2.13-2.8.1
+        image: confluentinc/cp-kafka:7.5.1
         env:
-          KAFKA_ADVERTISED_HOST_NAME: localhost
+          KAFKA_BROKER_ID: 1
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
         ports:
           - 9092:9092
       zookeeper:
-        image: wurstmeister/zookeeper:3.4.6
+        image: zookeeper:3.9.1
         ports:
           - 2181:2181
       scylla:
