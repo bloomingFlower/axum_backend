@@ -55,9 +55,18 @@ jobs:
       # Add a step to run the server before tests
       - name: Start Server
         run: cargo run -p web-server &
-      # Ensure the server has time to start up
-      - name: Wait for Server
-        run: sleep 5
+      # Increase wait time and add health check
+      - name: Wait for Server and Health Check
+        run: |
+          sleep 10
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Server is up!"
+              break
+            fi
+            echo "Waiting for server... (attempt $i)"
+            sleep 2
+          done
       # Finally, run tests
       - name: Run tests
         run: cargo run -p web-server --example test

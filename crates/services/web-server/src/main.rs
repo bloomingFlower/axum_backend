@@ -17,6 +17,7 @@ use lib_core::model::psql::ModelManager;
 use lib_core::model::scylla::{initialize as initialize_scylla, ScyllaManager};
 
 use axum::http::{HeaderValue, Method};
+use axum::routing::get;
 use axum::{middleware, Router};
 use http::Request;
 use lib_core::_dev_utils;
@@ -115,6 +116,7 @@ async fn main() -> Result<()> {
         // Add HNStory routes
         .nest("/api/v2/hnstories", routes_hnstory)
         .layer(cors.clone())
+        .route("/health", get(handler_health))
         // Add a fallback service to serve static files
         .fallback_service(routes_static::serve_dir());
 
@@ -166,6 +168,10 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+}
+
+async fn handler_health() -> &'static str {
+    "OK"
 }
 
 // //region Hello Routes
