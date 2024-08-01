@@ -37,6 +37,21 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      kafka:
+        image: wurstmeister/kafka:2.13-2.8.1
+        env:
+          KAFKA_ADVERTISED_HOST_NAME: localhost
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        ports:
+          - 9092:9092
+      zookeeper:
+        image: wurstmeister/zookeeper:3.4.6
+        ports:
+          - 2181:2181
+      scylla:
+        image: scylladb/scylla:5.2.0
+        ports:
+          - 9042:9042
 
     steps:
       - uses: actions/checkout@v4
@@ -49,13 +64,13 @@ jobs:
         run: rustc --version
       - name: Build
         run: cargo build --verbose
-      # Ensure the DB has time to start up
-      - name: Wait for DB
-        run: sleep 50
-      # Add a step to run the server before tests
+      - name: Wait for services
+        run: |
+          sleep 30
+          nc -z localhost 9092 || (echo "Kafka is not running" && exit 1)
+          nc -z localhost 9042 || (echo "Scylla is not running" && exit 1)
       - name: Start Server
         run: cargo run -p web-server &
-      # Increase wait time and add health check
       - name: Wait for Server and Health Check
         run: |
           sleep 10
@@ -67,7 +82,6 @@ jobs:
             echo "Waiting for server... (attempt $i)"
             sleep 2
           done
-      # Finally, run tests
       - name: Run tests
         run: cargo run -p web-server --example test
         #cargo test --verbose

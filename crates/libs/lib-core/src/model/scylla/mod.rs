@@ -1,7 +1,6 @@
 mod base;
 mod error;
 pub mod hnstory;
-mod result;
 
 pub use self::error::{Error, Result};
 

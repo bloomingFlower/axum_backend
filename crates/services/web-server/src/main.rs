@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     // Initialize Scylla tables
     initialize_scylla(sm.session())
         .await
-        .map_err(|e| Error::Scylla(e))?;
+        .map_err(Error::Scylla)?;
 
     // Configure CORS
     let cors = CorsLayer::new()

@@ -5,7 +5,6 @@ use axum::{
     routing::{get, options},
     Json, Router,
 };
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use lib_core::model::scylla::hnstory::{
     select_all_hnstories_with_pagination, select_hnstory, PagingState,
 };
@@ -65,7 +64,7 @@ async fn list_hnstories(
     debug!("--> Route_HNStory: Listing HNStories with pagination");
     let session = sm.session();
 
-    let paging_state = params.paging_state.map(|s| PagingState::new(s));
+    let paging_state = params.paging_state.map(PagingState::new);
 
     match select_all_hnstories_with_pagination(session, params.page_size as i32, paging_state).await
     {

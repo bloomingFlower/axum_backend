@@ -105,7 +105,7 @@ impl PagingState {
         BASE64
             .decode(&self.0)
             .map(Bytes::from)
-            .map_err(|e| Error::Base64(e))
+            .map_err(Error::Base64)
     }
 }
 
