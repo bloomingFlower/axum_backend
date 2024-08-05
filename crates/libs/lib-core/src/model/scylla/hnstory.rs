@@ -10,6 +10,8 @@ use crate::model::redis_cache::RedisManager;
 use crate::model::scylla::error::{Error, Result};
 use tracing::{debug, error, info};
 
+const REDIS_CACHE_DURATION: usize = 300; // 5 minutes
+
 #[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList, Serialize)]
 pub struct HNStory {
     #[serde(alias = "objectID")]
@@ -141,7 +143,6 @@ pub async fn select_all_hnstories_with_pagination(
     let prepared: PreparedStatement = session
         .prepare(Query::new(query_str).with_page_size(page_size))
         .await?;
-    debug!("--> HNStory: prepared: {:?}", prepared);
 
     // Generate a unique cache key with paging state
     let cache_key = match &paging_state {
@@ -154,12 +155,15 @@ pub async fn select_all_hnstories_with_pagination(
         .get::<(Vec<HNStory>, Option<PagingState>)>(&cache_key)
         .await
     {
-        debug!("Data fetched directly from Redis. Cache Key: {}", cache_key);
+        debug!(
+            "--> HNStory: Data fetched directly from Redis. Cache Key: {}",
+            cache_key
+        );
         return Ok(cached);
     }
 
     // If there is no data in Redis, fetch data from the backend
-    info!("No data in Redis. Fetching data from the backend.");
+    info!("--> HNStory: No data in Redis. Fetching data from the backend.");
 
     // Execute the query with paging state
     let result = session
@@ -177,11 +181,11 @@ pub async fn select_all_hnstories_with_pagination(
         .into_typed::<HNStory>()
         .map(|row_result| match row_result {
             Ok(story) => {
-                debug!("Successfully parsed HNStory: {:?}", story);
+                debug!("--> HNStory: Successfully parsed HNStory");
                 Ok(story)
             }
             Err(e) => {
-                error!("Error converting row to HNStory: {:?}", e);
+                error!("--> HNStory: Error converting row to HNStory: {:?}", e);
                 Err(Error::from(e))
             }
         })
@@ -189,13 +193,17 @@ pub async fn select_all_hnstories_with_pagination(
 
     let new_paging_state = result.paging_state.as_ref().map(PagingState::from_bytes);
 
-    debug!("--> HNStory: stories: {:?}", stories);
-
     let result = (stories, new_paging_state);
 
     // Cache the result
-    redis.set(&cache_key, &result, 300).await.ok(); // 5 minutes cache
-    debug!("Backend data fetched. Cache Key: {}", cache_key);
+    redis
+        .set(&cache_key, &result, REDIS_CACHE_DURATION)
+        .await
+        .ok();
+    debug!(
+        "--> HNStory: Backend data fetched. Cache Key: {}",
+        cache_key
+    );
 
     Ok(result)
 }

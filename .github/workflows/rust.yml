@@ -54,6 +54,15 @@ jobs:
         image: scylladb/scylla:5.2.0
         ports:
           - 9042:9042
+      redis:
+        image: redis:7.4.0
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +80,7 @@ jobs:
           sleep 30
           nc -z localhost 9092 || (echo "Kafka is not running" && exit 1)
           nc -z localhost 9042 || (echo "Scylla is not running" && exit 1)
+          nc -z localhost 6379 || (echo "Redis is not running" && exit 1)
       - name: Start Server
         run: cargo run -p web-server &
       - name: Wait for Server and Health Check
