@@ -6,8 +6,9 @@ use scylla::{
 use serde::{Deserialize, Serialize};
 use std::{env, fs, path::Path, path::PathBuf};
 
+use crate::model::redis_cache::RedisManager;
 use crate::model::scylla::error::{Error, Result};
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 #[derive(PartialEq, Clone, Debug, SerializeRow, Deserialize, FromRow, ValueList, Serialize)]
 pub struct HNStory {
@@ -65,16 +66,31 @@ pub async fn add_hnstory(session: &Session, hnstory: HNStory) -> Result<()> {
         .map_err(From::from)
 }
 
-pub async fn select_hnstory(session: &Session, id: String) -> Result<Vec<HNStory>> {
+pub async fn select_hnstory(
+    session: &Session,
+    redis: &RedisManager,
+    id: String,
+) -> Result<Vec<HNStory>> {
+    let cache_key = format!("hnstory:{}", id);
+    if let Ok(Some(cached)) = redis.get::<Vec<HNStory>>(&cache_key).await {
+        return Ok(cached);
+    }
+
     let query = read_sql_file("hnstory/00-select-story.sql")?;
-    session
+    let result = session
         .query(query, (id,))
         .await?
         .rows
         .unwrap_or_default()
         .into_typed::<HNStory>()
         .map(|v| v.map_err(From::from))
-        .collect()
+        .collect::<Result<Vec<HNStory>>>()?;
+
+    if !result.is_empty() {
+        redis.set(&cache_key, &result, 3600).await.ok(); // 1시간 캐시
+    }
+
+    Ok(result)
 }
 
 pub async fn select_all_hnstories(session: &Session) -> Result<Vec<HNStory>> {
@@ -111,6 +127,7 @@ impl PagingState {
 
 pub async fn select_all_hnstories_with_pagination(
     session: &Session,
+    redis: &RedisManager,
     page_size: i32,
     paging_state: Option<PagingState>,
 ) -> Result<(Vec<HNStory>, Option<PagingState>)> {
@@ -126,12 +143,30 @@ pub async fn select_all_hnstories_with_pagination(
         .await?;
     debug!("--> HNStory: prepared: {:?}", prepared);
 
+    // Generate a unique cache key with paging state
+    let cache_key = match &paging_state {
+        Some(state) => format!("hnstories:page_size:{}:paging_state:{}", page_size, state.0),
+        None => format!("hnstories:page_size:{}:first_page", page_size),
+    };
+
+    // Check if the cached result exists
+    if let Ok(Some(cached)) = redis
+        .get::<(Vec<HNStory>, Option<PagingState>)>(&cache_key)
+        .await
+    {
+        debug!("Data fetched directly from Redis. Cache Key: {}", cache_key);
+        return Ok(cached);
+    }
+
+    // If there is no data in Redis, fetch data from the backend
+    info!("No data in Redis. Fetching data from the backend.");
+
     // Execute the query with paging state
     let result = session
         .execute_paged(
             &prepared,
             &[],
-            paging_state.and_then(|ps| ps.into_bytes().ok()),
+            paging_state.as_ref().and_then(|ps| ps.into_bytes().ok()),
         )
         .await?;
 
@@ -156,7 +191,13 @@ pub async fn select_all_hnstories_with_pagination(
 
     debug!("--> HNStory: stories: {:?}", stories);
 
-    Ok((stories, new_paging_state))
+    let result = (stories, new_paging_state);
+
+    // Cache the result
+    redis.set(&cache_key, &result, 300).await.ok(); // 5 minutes cache
+    debug!("Backend data fetched. Cache Key: {}", cache_key);
+
+    Ok(result)
 }
 
 fn read_sql_file(file_name: &str) -> Result<String> {

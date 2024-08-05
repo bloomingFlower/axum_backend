@@ -19,6 +19,8 @@ pub enum Error {
     Model(model::psql::Error),
     #[from]
     Scylla(model::scylla::Error),
+    #[from]
+    Redis(model::redis_cache::Error),
 }
 
 impl core::fmt::Display for Error {

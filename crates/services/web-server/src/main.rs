@@ -14,6 +14,7 @@ use crate::web::mw_res_map::main_response_mapper;
 use crate::web::{routes_hnstory, routes_login, routes_rpc, routes_static};
 /// Import the necessary modules
 use lib_core::model::psql::ModelManager;
+use lib_core::model::redis_cache::RedisManager;
 use lib_core::model::scylla::{initialize as initialize_scylla, ScyllaManager};
 
 use axum::http::{HeaderValue, Method};
@@ -29,6 +30,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+
 /// Tokio Runtime Entry Point
 #[tokio::main]
 /// Async Main Function that returns a Result
@@ -63,6 +65,11 @@ async fn main() -> Result<()> {
         .await
         .map_err(Error::Scylla)?;
 
+    // Initialize the Redis Manager
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let rm: Arc<RedisManager> = Arc::new(RedisManager::new(&redis_url).await?);
+
     // Configure CORS
     let cors = CorsLayer::new()
         .allow_origin([
@@ -93,7 +100,7 @@ async fn main() -> Result<()> {
     let routes_rpc =
         routes_rpc::routes(mm.clone()).route_layer(middleware::from_fn(mw_require_auth));
 
-    let routes_hnstory = routes_hnstory::routes(sm.clone());
+    let routes_hnstory = routes_hnstory::routes(sm.clone(), rm.clone());
 
     // Initialize the Router with all the routes
     let routes_all = Router::new()

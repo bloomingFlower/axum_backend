@@ -5,6 +5,7 @@ use axum::{
     routing::{get, options},
     Json, Router,
 };
+use lib_core::model::redis_cache::RedisManager;
 use lib_core::model::scylla::hnstory::{
     select_all_hnstories_with_pagination, select_hnstory, PagingState,
 };
@@ -13,22 +14,22 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::{debug, error};
 
-pub fn routes(sm: Arc<ScyllaManager>) -> Router {
+pub fn routes(sm: Arc<ScyllaManager>, rm: Arc<RedisManager>) -> Router {
     Router::new()
         .route("/", get(list_hnstories))
         .route("/:id", get(get_hnstory))
         .route("/", options(handle_options))
-        .with_state(sm)
+        .with_state((sm, rm))
 }
 
 // HNStory select handler
 async fn get_hnstory(
-    State(sm): State<Arc<ScyllaManager>>,
+    State((sm, rm)): State<(Arc<ScyllaManager>, Arc<RedisManager>)>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let session = sm.session();
 
-    match select_hnstory(session, id).await {
+    match select_hnstory(session, rm.as_ref(), id).await {
         Ok(stories) => {
             if stories.is_empty() {
                 (StatusCode::NOT_FOUND, "Story not found").into_response()
@@ -58,7 +59,7 @@ pub struct PaginatedResponse<T> {
 }
 
 async fn list_hnstories(
-    State(sm): State<Arc<ScyllaManager>>,
+    State((sm, rm)): State<(Arc<ScyllaManager>, Arc<RedisManager>)>,
     Query(params): Query<PaginationParams>,
 ) -> impl IntoResponse {
     debug!("--> Route_HNStory: Listing HNStories with pagination");
@@ -66,7 +67,13 @@ async fn list_hnstories(
 
     let paging_state = params.paging_state.map(PagingState::new);
 
-    match select_all_hnstories_with_pagination(session, params.page_size as i32, paging_state).await
+    match select_all_hnstories_with_pagination(
+        session,
+        rm.as_ref(),
+        params.page_size as i32,
+        paging_state,
+    )
+    .await
     {
         Ok((stories, new_paging_state)) => {
             debug!(

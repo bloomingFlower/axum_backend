@@ -74,6 +74,7 @@ ALTER DATABASE postgres SET log_statement = 'all';
 
 - [x] ORM (sqlb > sea-query)
 - [x] ScyllaDB
+- [x] Redis
 
 ### Protocols
 
@@ -81,12 +82,12 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - [x] JSON-RPC 2.0
 - [ ] gRPC
 - [x] SSE
-- [x] WebSockets
+- [ ] WebSockets
 - [ ] GraphQL
 
 ### ESP
 
-- [ ] Apache Kafka Cluster(Strimizi)
+- [x] Apache Kafka Cluster(Strimizi)
 - [x] Install the Strimizi in Cluster
 - [ ] KEDA(Kubernetes Event-Driven Autoscaling)
 - [ ] Add Parameters to Prometheus
