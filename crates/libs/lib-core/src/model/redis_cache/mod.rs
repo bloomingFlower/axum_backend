@@ -4,6 +4,8 @@ use redis::AsyncCommands;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::config::core_config;
+
 pub use self::error::{Error, Result};
 use tracing::{debug, error, info};
 
@@ -83,5 +85,15 @@ impl RedisManager {
         }
 
         result
+    }
+
+    pub async fn initialize() -> Result<Arc<Self>> {
+        // Get Redis URL from environment variable or use default
+        let redis_url = &core_config().REDIS_URL;
+
+        info!("--> RedisCache: Initializing with URL: {}", redis_url);
+
+        let manager = Self::new(redis_url).await?;
+        Ok(Arc::new(manager))
     }
 }

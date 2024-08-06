@@ -36,6 +36,8 @@ KAFKA_BOOTSTRAP_SERVERS = "127.0.0.1:9092"
 
 SERVICE_SSE_SERVER_URL = "127.0.0.1:4000"
 
+SERVICE_REDIS_URL = "redis://localhost:6379"
+
 ## ConfigMap
 
 # This will be relative to Cargo.toml file.

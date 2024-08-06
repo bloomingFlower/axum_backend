@@ -118,7 +118,7 @@ pub async fn consume(topic_name: &str) {
                 };
                 // Log the details of the received message
                 debug!(
-                    "Received message:\n\
+                    "--> Kafka Consumer: Received message:\n\
                      Key: {:?}\n\
                      Payload: {}\n\
                      Topic: {}\n\

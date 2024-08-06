@@ -10,6 +10,7 @@ documentation.workspace = true
 lib-producer = { path = "../../libs/lib-producer" }
 lib-consumer = { path = "../../libs/lib-consumer" }
 lib-utils = { path = "../../libs/lib-utils" }
+lib-core = { path = "../../libs/lib-core" }
 
 axum = "0.7.5"
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
@@ -24,6 +25,7 @@ serde = "1.0.193"
 serde_json = "1.0.117"
 rdkafka = "0.36.2"
 http = "1.1"
+redis = { version = "0.26.1", features = ["tokio-comp"] }
 
 [dev-dependencies]
 eventsource-stream = "0.2"

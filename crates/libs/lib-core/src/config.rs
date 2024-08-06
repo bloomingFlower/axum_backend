@@ -20,6 +20,9 @@ pub struct CoreConfig {
     pub SCYLLA_DB_URL: String,
     pub SCYLLA_DB_USERNAME: String,
     pub SCYLLA_DB_PASSWORD: String,
+
+    // -- Redis
+    pub REDIS_URL: String,
 }
 
 impl CoreConfig {
@@ -33,6 +36,9 @@ impl CoreConfig {
             SCYLLA_DB_URL: get_env("SERVICE_SCYLLA_DB_URL")?,
             SCYLLA_DB_USERNAME: get_env("SERVICE_SCYLLA_DB_USER")?,
             SCYLLA_DB_PASSWORD: get_env("SERVICE_SCYLLA_DB_PASSWORD")?,
+
+            // -- Redis
+            REDIS_URL: get_env("SERVICE_REDIS_URL")?,
         })
     }
 }

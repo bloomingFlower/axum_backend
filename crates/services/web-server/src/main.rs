@@ -66,9 +66,7 @@ async fn main() -> Result<()> {
         .map_err(Error::Scylla)?;
 
     // Initialize the Redis Manager
-    let redis_url =
-        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
-    let rm: Arc<RedisManager> = Arc::new(RedisManager::new(&redis_url).await?);
+    let rm = RedisManager::initialize().await?;
 
     // Configure CORS
     let cors = CorsLayer::new()
