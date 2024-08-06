@@ -76,7 +76,7 @@ ALTER DATABASE postgres SET log_statement = 'all';
 - [x] ScyllaDB
 - [x] Redis
 
-### Protocols
+### API Methods
 
 - [x] REST
 - [x] JSON-RPC 2.0

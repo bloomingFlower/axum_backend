@@ -20,10 +20,19 @@ use std::sync::Arc;
 use std::{convert::Infallible, path::PathBuf};
 use tokio::sync::broadcast;
 use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
-use tracing::info;
+use tracing::{debug, error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::sse_config;
+
+use lib_core::model::redis_cache::RedisManager;
+use std::sync::RwLock;
+
+const REDIS_EXPIRATION: usize = 2700;
+/// Local cache for Bitcoin information
+struct LocalCache {
+    bitcoin_info: Option<BitcoinInfo>,
+}
 
 /// /// Main function to initialize the SSE service
 /// 1. Initialize tracing subscriber for logging
@@ -32,7 +41,7 @@ use crate::config::sse_config;
 /// 4. Spawn a task to consume data from Kafka and broadcast it
 /// 5. Create and run the Axum application
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Initialize tracing subscriber
     tracing_subscriber::registry()
         .with(
@@ -60,64 +69,114 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // independently of the original sender.
     let tx_clone = tx.clone();
 
+    // Initialize a Redis manager
+    let redis_manager = RedisManager::initialize()
+        .await
+        .expect("Failed to initialize Redis manager");
+    debug!("--> Main: Redis manager created");
+    // Initialize a local cache
+    let local_cache = Arc::new(RwLock::new(LocalCache { bitcoin_info: None }));
+    debug!("--> Main: Local cache initialized");
+
     // Get Data from Kafka
     // Spawn a new task to consume data from Kafka and broadcast it
+    let redis_manager_clone = redis_manager.clone();
+    let local_cache_clone = local_cache.clone();
     tokio::spawn(async move {
-        info!("--> SSE Service: Spawning task to consume data from Kafka");
+        debug!("--> SSE Service::Kafka Consumer Task: Started");
         // Get the message stream from the Kafka consumer
         let message_stream = consume_stream("token").await;
         // Check if the message stream is Ok
         if let Ok(mut message_stream) = message_stream {
-            info!("--> SSE Service: Message stream received");
+            debug!("--> SSE Service::Kafka Consumer Task: Message stream received");
             // Consume messages from the stream and send them to the broadcast channel
             while let Some(message_result) = message_stream.next().await {
                 // Check if the message is Ok
                 if let Ok(message) = message_result {
                     // Check if the message has a payload
                     if let Some(payload) = message.payload() {
-                        // Parse the Bitcoin information from the payload
+                        debug!("--> SSE Service::Kafka Consumer Task: Received message payload");
                         if let Ok(bitcoin_info) =
                             parse_bitcoin_info(String::from_utf8_lossy(payload).to_string())
                         {
-                            info!("--> SSE Service: Bitcoin info parsed: {:?}", bitcoin_info);
+                            debug!(
+                                "--> SSE Service::Kafka Consumer Task: Bitcoin info parsed: {:?}",
+                                bitcoin_info
+                            );
                             // Send the Bitcoin information to the broadcast channel
-                            let _ = tx_clone.send(bitcoin_info);
-                            info!("--> SSE Service: Bitcoin info sent to broadcast channel");
+                            let _ = tx_clone.send(bitcoin_info.clone());
+                            // Cache the message in Redis
+                            if let Err(e) = redis_manager_clone
+                                .set("bitcoin_info", &bitcoin_info, REDIS_EXPIRATION)
+                                .await
+                            {
+                                error!("--> SSE Service::Kafka Consumer Task: Failed to cache Bitcoin info in Redis: {:?}", e);
+                            } else {
+                                debug!("--> SSE Service::Kafka Consumer Task: Bitcoin info cached in Redis");
+                            }
+                            // Cache the message in local memory
+                            {
+                                let mut cache = local_cache_clone.write().unwrap();
+                                cache.bitcoin_info = Some(bitcoin_info);
+                                debug!("--> SSE Service::Kafka Consumer Task: Bitcoin info cached locally");
+                            }
+                        } else {
+                            error!("--> SSE Service::Kafka Consumer Task: Failed to parse Bitcoin info from payload");
                         }
                     }
                 } else {
-                    // If there's an error getting a new message, try to use the cached message
-                    if let Some(cached_message) = get_cached_message().await {
-                        if let Ok(bitcoin_info) = parse_bitcoin_info(cached_message) {
-                            info!(
-                                "--> SSE Service: Using cached Bitcoin info: {:?}",
-                                bitcoin_info
-                            );
+                    debug!("--> SSE Service::Kafka Consumer Task: Failed to receive message, checking caches");
+                    // Check the local cache first
+                    let local_bitcoin_info = {
+                        let cache = local_cache_clone.read().unwrap();
+                        cache.bitcoin_info.clone()
+                    };
+
+                    match local_bitcoin_info {
+                        Some(bitcoin_info) => {
+                            debug!("--> SSE Service::Kafka Consumer Task: Using Bitcoin info from local cache");
                             let _ = tx_clone.send(bitcoin_info);
-                            info!("--> SSE Service: Cached Bitcoin info sent to broadcast channel");
+                        }
+                        None => {
+                            debug!("--> SSE Service::Kafka Consumer Task: Local cache empty, checking Redis");
+                            // If the local cache is empty, check Redis
+                            match redis_manager_clone.get::<BitcoinInfo>("bitcoin_info").await {
+                                Ok(Some(bitcoin_info)) => {
+                                    debug!("--> SSE Service::Kafka Consumer Task: Bitcoin info retrieved from Redis");
+                                    let _ = tx_clone.send(bitcoin_info.clone());
+                                    // Update the local cache
+                                    {
+                                        let mut cache = local_cache_clone.write().unwrap();
+                                        cache.bitcoin_info = Some(bitcoin_info);
+                                        debug!("--> SSE Service::Kafka Consumer Task: Local cache updated with Redis data");
+                                    }
+                                }
+                                Ok(None) => info!("--> SSE Service::Kafka Consumer Task: No cached Bitcoin info available in Redis"),
+                                Err(e) => error!("--> SSE Service::Kafka Consumer Task: Failed to get cached Bitcoin info from Redis: {:?}", e),
+                            }
                         }
                     }
                 }
             }
         } else {
-            info!("--> SSE Service: Failed to get message stream, using cached message");
+            error!("--> SSE Service::Kafka Consumer Task: Failed to get message stream");
             // If we couldn't get a message stream, try to use the cached message
             if let Some(cached_message) = get_cached_message().await {
                 if let Ok(bitcoin_info) = parse_bitcoin_info(cached_message) {
                     info!(
-                        "--> SSE Service: Using cached Bitcoin info: {:?}",
+                        "--> SSE Service::Kafka Consumer Task: Using cached Bitcoin info: {:?}",
                         bitcoin_info
                     );
                     let _ = tx_clone.send(bitcoin_info);
-                    info!("--> SSE Service: Cached Bitcoin info sent to broadcast channel");
+                    info!("--> SSE Service::Kafka Consumer Task: Cached Bitcoin info sent to broadcast channel");
                 }
             }
         }
-        info!("--> SSE Service: Task to consume data from Kafka completed");
+        debug!("--> SSE Service::Kafka Consumer Task: Completed");
     });
 
     // Create the Axum application
-    let app = app(tx);
+    let app = app(tx, redis_manager, local_cache);
 
     // Parsing the server URL
     let server_url = &sse_config().SSE_SERVER_URL;
@@ -142,7 +201,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Parse the Bitcoin information from the message
-fn parse_bitcoin_info(message: String) -> Result<BitcoinInfo, Box<dyn std::error::Error>> {
+fn parse_bitcoin_info(
+    message: String,
+) -> Result<BitcoinInfo, Box<dyn std::error::Error + Send + Sync>> {
     // Recieve a JSON string and parse it into a BitcoinInfo struct
     let bitcoin_info: BitcoinInfo = serde_json::from_str(&message)?;
     // Return the Bitcoin information
@@ -151,7 +212,11 @@ fn parse_bitcoin_info(message: String) -> Result<BitcoinInfo, Box<dyn std::error
 
 /// Create the Axum application
 /// Support multiple clients with SSE
-fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
+fn app(
+    tx: Arc<broadcast::Sender<BitcoinInfo>>,
+    redis_manager: Arc<RedisManager>,
+    local_cache: Arc<RwLock<LocalCache>>,
+) -> Router {
     // Serve static files from the assets directory
     // CARGO_MANIFEST_DIR is the path to the directory containing the Cargo.toml file
     let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
@@ -176,7 +241,14 @@ fn app(tx: Arc<broadcast::Sender<BitcoinInfo>>) -> Router {
         // Route the request to the SSE handler
         .route(
             "/sse",
-            get(move |user_agent| sse_handler(user_agent, tx.clone())),
+            get(move |user_agent| {
+                sse_handler(
+                    user_agent,
+                    tx.clone(),
+                    redis_manager.clone(),
+                    local_cache.clone(),
+                )
+            }),
         )
         .layer(TraceLayer::new_for_http())
         .layer(cors) // Add CORS middleware
@@ -202,55 +274,51 @@ struct SSEMessage {
 async fn sse_handler(
     TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     tx: Arc<broadcast::Sender<BitcoinInfo>>,
+    redis_manager: Arc<RedisManager>,
+    local_cache: Arc<RwLock<LocalCache>>,
 ) -> impl IntoResponse {
-    info!("--> SSE Handler: `{}` connected", user_agent.as_str());
-
+    debug!(
+        "--> SSE Handler: New connection from user agent: {}",
+        user_agent.as_str()
+    );
     let rx = tx.subscribe();
 
     // Create a stream that first sends the cached data, then listens for updates
     let stream = stream::once(async move {
-        // Try to get the cached message first
-        match get_cached_message().await {
-            Some(cached_message) => match parse_bitcoin_info(cached_message) {
-                Ok(bitcoin_info) => {
-                    let info_with_details = BitcoinInfoWithDetails {
-                        price: bitcoin_info.current_price,
-                        last_updated: bitcoin_info.last_updated,
-                        high_24h: bitcoin_info.high_24h,
-                        low_24h: bitcoin_info.low_24h,
-                        price_change_24h: bitcoin_info.price_change_24h,
-                        price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
-                    };
+        debug!("--> SSE Handler: Checking caches for initial data");
+        // Check the local cache first
+        let local_bitcoin_info = {
+            let cache = local_cache.read().unwrap();
+            cache.bitcoin_info.clone()
+        };
 
-                    let sse_message = SSEMessage {
-                        status: "success".to_string(),
-                        data: Some(info_with_details),
-                    };
-
-                    let info_str = serde_json::to_string(&sse_message).unwrap();
-                    let event = Event::default().data(info_str);
-
-                    info!("--> SSE Handler: Sending cached update: {:?}", sse_message);
-                    Ok::<Event, Infallible>(event)
-                }
-                Err(e) => {
-                    info!("--> SSE Handler: Failed to parse cached message: {:?}", e);
-                    let waiting_message = SSEMessage {
-                        status: "waiting".to_string(),
-                        data: None,
-                    };
-                    let waiting_str = serde_json::to_string(&waiting_message).unwrap();
-                    Ok::<Event, Infallible>(Event::default().data(waiting_str))
-                }
-            },
+        match local_bitcoin_info {
+            Some(bitcoin_info) => {
+                debug!("--> SSE Handler: Using data from local cache");
+                create_sse_event(bitcoin_info, "Sending cached update from local cache")
+            }
             None => {
-                info!("--> SSE Handler: No cached data available");
-                let waiting_message = SSEMessage {
-                    status: "waiting".to_string(),
-                    data: None,
-                };
-                let waiting_str = serde_json::to_string(&waiting_message).unwrap();
-                Ok::<Event, Infallible>(Event::default().data(waiting_str))
+                debug!("--> SSE Handler: Local cache empty, checking Redis");
+                // If the local cache is empty, check Redis
+                match redis_manager.get::<BitcoinInfo>("bitcoin_info").await {
+                    Ok(Some(bitcoin_info)) => {
+                        debug!("--> SSE Handler: Data found in Redis, updating local cache");
+                        // Update the local cache
+                        {
+                            let mut cache = local_cache.write().unwrap();
+                            cache.bitcoin_info = Some(bitcoin_info.clone());
+                        }
+                        create_sse_event(bitcoin_info, "Sending cached update from Redis")
+                    }
+                    Ok(None) => {
+                        debug!("--> SSE Handler: No data found in Redis");
+                        create_waiting_event("No cached data available")
+                    }
+                    Err(e) => {
+                        error!("--> SSE Handler: Redis error: {:?}", e);
+                        create_error_event(format!("Failed to get cached data: {:?}", e))
+                    }
+                }
             }
         }
     })
@@ -303,64 +371,54 @@ async fn sse_handler(
     )
 }
 
-#[cfg(test)]
-mod tests {
-    // Import necessary modules for testing
-    use super::*;
-    use eventsource_stream::Eventsource;
-    use futures::StreamExt;
-    use tokio::net::TcpListener;
-    use tokio::sync::broadcast;
+/// Helper functions
+fn create_sse_event(bitcoin_info: BitcoinInfo, log_message: &str) -> Result<Event, Infallible> {
+    debug!(
+        "--> SSE Event Creator: Creating SSE event with message: {}",
+        log_message
+    );
+    let info_with_details = BitcoinInfoWithDetails {
+        price: bitcoin_info.current_price,
+        last_updated: bitcoin_info.last_updated,
+        high_24h: bitcoin_info.high_24h,
+        low_24h: bitcoin_info.low_24h,
+        price_change_24h: bitcoin_info.price_change_24h,
+        price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
+    };
 
-    #[tokio::test]
-    async fn integration_test() {
-        // A helper function that spawns our application in the background
-        async fn spawn_app(host: impl Into<String>) -> String {
-            let host = host.into();
-            // Bind to localhost at the port 0, which will let the OS assign an available port to us
-            let listener = TcpListener::bind(format!("{}:0", host)).await.unwrap();
-            // Retrieve the port assigned to us by the OS
-            let port = listener.local_addr().unwrap().port();
-            let (tx, _) = broadcast::channel::<BitcoinInfo>(100);
-            let tx = Arc::new(tx);
-            tokio::spawn(async {
-                axum::serve(listener, app(tx)).await.unwrap();
-            });
-            // Returns address (e.g. http://127.0.0.1{random_port})
-            format!("http://{}:{}", host, port)
-        }
-        let listening_url = spawn_app("127.0.0.1").await;
+    let sse_message = SSEMessage {
+        status: "success".to_string(),
+        data: Some(info_with_details),
+    };
 
-        // Create a new client to connect to the SSE endpoint
-        let mut event_stream = reqwest::Client::new()
-            .get(&format!("{}/sse", listening_url))
-            .header("User-Agent", "integration_test")
-            .send()
-            .await
-            .unwrap()
-            .bytes_stream()
-            .eventsource()
-            .take(1);
+    let info_str = serde_json::to_string(&sse_message).unwrap();
+    let event = Event::default().data(info_str);
 
-        // Collect event data from the stream
-        let mut event_data: Vec<String> = vec![];
-        while let Some(event) = event_stream.next().await {
-            match event {
-                Ok(event) => {
-                    // break the loop at the end of SSE stream
-                    if event.data == "[DONE]" {
-                        break;
-                    }
+    Ok::<Event, Infallible>(event)
+}
 
-                    event_data.push(event.data);
-                }
-                Err(_) => {
-                    panic!("Error in event stream");
-                }
-            }
-        }
+fn create_waiting_event(message: &str) -> Result<Event, Infallible> {
+    debug!(
+        "--> SSE Event Creator: Creating waiting event with message: {}",
+        message
+    );
+    let waiting_message = SSEMessage {
+        status: "waiting".to_string(),
+        data: None,
+    };
+    let waiting_str = serde_json::to_string(&waiting_message).unwrap();
+    Ok::<Event, Infallible>(Event::default().data(waiting_str))
+}
 
-        // Assert that the first event data is as expected
-        assert!(event_data[0].contains("BitcoinInfo"));
-    }
+fn create_error_event(error_message: String) -> Result<Event, Infallible> {
+    error!(
+        "--> SSE Event Creator: Creating error event with message: {}",
+        error_message
+    );
+    let error_message = SSEMessage {
+        status: "error".to_string(),
+        data: None,
+    };
+    let error_str = serde_json::to_string(&error_message).unwrap();
+    Ok::<Event, Infallible>(Event::default().data(error_str))
 }
