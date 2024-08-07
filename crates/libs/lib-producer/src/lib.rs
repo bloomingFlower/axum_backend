@@ -76,7 +76,7 @@ pub async fn produce_bitcoin_info() -> Result<(), Box<dyn std::error::Error + Se
     let bitcoin_producer = producer.clone();
     tokio::spawn(async move {
         info!("--> Kafka Info Producer: Spawned");
-        let mut interval = interval(Duration::from_secs(3600 * 24 / 30));
+        let mut interval = interval(Duration::from_secs(270)); // 4.5 minutes
         loop {
             interval.tick().await;
             let max_retries = 3;
