@@ -32,6 +32,10 @@ pub struct BitcoinInfo {
     pub atl_date: String,
     pub roi: Option<serde_json::Value>,
     pub last_updated: String,
+    pub percent_change_1h: f64,
+    pub percent_change_24h: f64,
+    pub percent_change_7d: f64,
+    pub percent_change_30d: f64,
 }
 
 impl Default for BitcoinInfo {
@@ -63,6 +67,10 @@ impl Default for BitcoinInfo {
             atl_date: "".to_string(),
             roi: None,
             last_updated: "".to_string(),
+            percent_change_1h: 0.0,
+            percent_change_24h: 0.0,
+            percent_change_7d: 0.0,
+            percent_change_30d: 0.0,
         }
     }
 }
@@ -88,10 +96,17 @@ pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
     let current_price = quote["price"].as_f64().unwrap_or(0.0);
     let price_change_percentage_24h = quote["percent_change_24h"].as_f64().unwrap_or(0.0);
 
-    // 24시간 변화율을 사용하여 대략적인 24시간 최고/최저 가격 계산
-    let price_change_24h = current_price * price_change_percentage_24h / 100.0;
-    let high_24h = current_price.max(current_price - price_change_24h);
-    let low_24h = current_price.min(current_price - price_change_24h);
+    // Calculate 24h high and low prices more accurately
+    let price_change_24h = quote["percent_change_24h"].as_f64().unwrap_or(0.0);
+    let high_24h = current_price * (1.0 + price_change_24h.abs() / 100.0);
+    let low_24h = current_price / (1.0 + price_change_24h.abs() / 100.0);
+
+    // Ensure high_24h is always greater than or equal to low_24h
+    let (high_24h, low_24h) = if price_change_24h >= 0.0 {
+        (high_24h, current_price)
+    } else {
+        (current_price, low_24h)
+    };
 
     let bitcoin_info = BitcoinInfo {
         id: "bitcoin".to_string(),
@@ -122,6 +137,10 @@ pub async fn fetch_bitcoin_info() -> Result<BitcoinInfo> {
         atl_date: "".to_string(),   // CoinMarketCap API doesn't provide this
         roi: None,                  // CoinMarketCap API doesn't provide this
         last_updated: btc_data["last_updated"].as_str().unwrap_or("").to_string(),
+        percent_change_1h: quote["percent_change_1h"].as_f64().unwrap_or(0.0),
+        percent_change_24h: quote["percent_change_24h"].as_f64().unwrap_or(0.0),
+        percent_change_7d: quote["percent_change_7d"].as_f64().unwrap_or(0.0),
+        percent_change_30d: quote["percent_change_30d"].as_f64().unwrap_or(0.0),
     };
 
     Ok(bitcoin_info)

@@ -263,6 +263,10 @@ struct BitcoinInfoWithDetails {
     low_24h: f64,
     price_change_24h: f64,
     price_change_percentage_24h: f64,
+    percent_change_1h: f64,
+    percent_change_24h: f64,
+    percent_change_7d: f64,
+    percent_change_30d: f64,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
@@ -332,6 +336,10 @@ async fn sse_handler(
                     low_24h: bitcoin_info.low_24h,
                     price_change_24h: bitcoin_info.price_change_24h,
                     price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
+                    percent_change_1h: bitcoin_info.percent_change_1h,
+                    percent_change_24h: bitcoin_info.percent_change_24h,
+                    percent_change_7d: bitcoin_info.percent_change_7d,
+                    percent_change_30d: bitcoin_info.percent_change_30d,
                 };
 
                 let sse_message = SSEMessage {
@@ -384,6 +392,10 @@ fn create_sse_event(bitcoin_info: BitcoinInfo, log_message: &str) -> Result<Even
         low_24h: bitcoin_info.low_24h,
         price_change_24h: bitcoin_info.price_change_24h,
         price_change_percentage_24h: bitcoin_info.price_change_percentage_24h,
+        percent_change_1h: bitcoin_info.percent_change_1h,
+        percent_change_24h: bitcoin_info.percent_change_24h,
+        percent_change_7d: bitcoin_info.percent_change_7d,
+        percent_change_30d: bitcoin_info.percent_change_30d,
     };
 
     let sse_message = SSEMessage {
