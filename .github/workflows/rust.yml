@@ -71,10 +71,29 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Check Rust version
         run: rustc --version
-      - name: Build
-        run: cargo build --verbose
+      - name: Build Release Binaries
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: true
+          RUSTC_WRAPPER: sccache
+          CARGO_INCREMENTAL: 0
+        run: |
+          cargo install sccache
+          sccache --start-server
+          cargo build --release --bin web-server --bin sse-server -j 4
+          sccache --show-stats
+          sccache --stop-server
       - name: Wait for services
         run: |
           sleep 30
@@ -82,7 +101,7 @@ jobs:
           nc -z localhost 9042 || (echo "Scylla is not running" && exit 1)
           nc -z localhost 6379 || (echo "Redis is not running" && exit 1)
       - name: Start Server
-        run: cargo run -p web-server &
+        run: ./target/release/web-server &
       - name: Wait for Server and Health Check
         run: |
           sleep 10
@@ -96,7 +115,13 @@ jobs:
           done
       - name: Run tests
         run: cargo run -p web-server --example test
-        #cargo test --verbose
+      - name: Upload Binaries as Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-binaries
+          path: |
+            target/release/web-server
+            target/release/sse-server
 
   deploy:
     needs: build
@@ -105,6 +130,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: rust-binaries
+          path: binaries
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -134,6 +165,9 @@ jobs:
           target: web-server
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          file: Dockerfile.web
+          build-args: |
+            BINARY_PATH=binaries/web-server
 
       - name: Build and push SSE Docker image
         uses: docker/build-push-action@v5
@@ -146,6 +180,9 @@ jobs:
           target: sse-server
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          file: Dockerfile.sse
+          build-args: |
+            BINARY_PATH=binaries/sse-server
 
       - name: Move cache
         run: |
