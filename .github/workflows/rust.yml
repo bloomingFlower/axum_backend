@@ -86,14 +86,9 @@ jobs:
       - name: Build Release Binaries
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
-          RUSTC_WRAPPER: sccache
           CARGO_INCREMENTAL: 0
         run: |
-          cargo install sccache
-          sccache --start-server
           cargo build --release --bin web-server --bin sse-server -j 4
-          sccache --show-stats
-          sccache --stop-server
       - name: Wait for services
         run: |
           sleep 30
