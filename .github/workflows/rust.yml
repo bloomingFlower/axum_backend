@@ -27,42 +27,42 @@ jobs:
     strategy:
       matrix:
         rust: [1.80.0, stable]
-    services:
-      postgres:
-        image: postgres:16.3
-        env:
-          POSTGRES_USER: dev
-          POSTGRES_PASSWORD: dev
-          POSTGRES_DB: dev
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      kafka:
-        image: confluentinc/cp-kafka:7.5.1
-        env:
-          KAFKA_BROKER_ID: 1
-          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-        ports:
-          - 9092:9092
-      zookeeper:
-        image: zookeeper:3.9.1
-        ports:
-          - 2181:2181
-      scylla:
-        image: scylladb/scylla:5.2.0
-        ports:
-          - 9042:9042
-      redis:
-        image: redis:7.4.0
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # services:
+    # postgres:
+    #   image: postgres:16.3
+    #   env:
+    #     POSTGRES_USER: dev
+    #     POSTGRES_PASSWORD: dev
+    #     POSTGRES_DB: dev
+    #   ports:
+    #     - 5432:5432
+    #   options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    # kafka:
+    #   image: confluentinc/cp-kafka:7.5.1
+    #   env:
+    #     KAFKA_BROKER_ID: 1
+    #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    #   ports:
+    #     - 9092:9092
+    # zookeeper:
+    #   image: zookeeper:3.9.1
+    #   ports:
+    #     - 2181:2181
+    # scylla:
+    #   image: scylladb/scylla:5.2.0
+    #   ports:
+    #     - 9042:9042
+    # redis:
+    #   image: redis:7.4.0
+    #   ports:
+    #     - 6379:6379
+    #   options: >-
+    #     --health-cmd "redis-cli ping"
+    #     --health-interval 10s
+    #     --health-timeout 5s
+    #     --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -92,16 +92,16 @@ jobs:
       - name: Wait for services
         run: |
           # Postgres
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for PostgreSQL..."
-            sleep 2
-          done
+          # until pg_isready -h localhost -p 5432; do
+          #   echo "Waiting for PostgreSQL..."
+          #   sleep 2
+          # done
 
           # Kafka
-          until nc -z localhost 9092; do
-            echo "Waiting for Kafka..."
-            sleep 2
-          done
+          # until nc -z localhost 9092; do
+          #   echo "Waiting for Kafka..."
+          #   sleep 2
+          # done
 
           # Scylla
           # until cqlsh localhost 9042 -e "show version" >/dev/null 2>&1; do
@@ -186,7 +186,7 @@ jobs:
           target: web-server
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          file: Dockerfile.web
+          file: Dockerfile
           build-args: |
             BINARY_PATH=binaries/web-server
 
@@ -201,7 +201,7 @@ jobs:
           target: sse-service
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          file: Dockerfile.sse
+          file: Dockerfile
           build-args: |
             BINARY_PATH=binaries/sse-service
 
