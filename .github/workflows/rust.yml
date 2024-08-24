@@ -110,10 +110,10 @@ jobs:
           # done
 
           # Redis
-          until redis-cli ping >/dev/null 2>&1; do
-            echo "Waiting for Redis..."
-            sleep 2
-          done
+          # until redis-cli ping >/dev/null 2>&1; do
+          #   echo "Waiting for Redis..."
+          #   sleep 2
+          # done
       - name: Start Server
         run: |
           ./target/release/web-server &
