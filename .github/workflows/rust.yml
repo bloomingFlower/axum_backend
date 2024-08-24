@@ -129,7 +129,7 @@ jobs:
             sleep 2
           done
       - name: Run example test
-        run: cargo run --release --example test
+        run: cargo run -p web-server --example test
       - name: Stop Server
         if: always()
         run: |
