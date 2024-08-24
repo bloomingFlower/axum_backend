@@ -88,7 +88,7 @@ jobs:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
           CARGO_INCREMENTAL: 0
         run: |
-          cargo build --release --bin web-server --bin sse-server -j 4
+          cargo build --release --bin web-server --bin sse-service -j 4
       - name: Wait for services
         run: |
           sleep 30
@@ -116,7 +116,7 @@ jobs:
           name: rust-binaries
           path: |
             target/release/web-server
-            target/release/sse-server
+            target/release/sse-service
 
   deploy:
     needs: build
@@ -172,12 +172,12 @@ jobs:
           push: true
           tags: |
             bloomingflower/axum-backend-sse:latest
-          target: sse-server
+          target: sse-service
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           file: Dockerfile.sse
           build-args: |
-            BINARY_PATH=binaries/sse-server
+            BINARY_PATH=binaries/sse-service
 
       - name: Move cache
         run: |
