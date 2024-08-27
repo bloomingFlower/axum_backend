@@ -149,13 +149,13 @@ jobs:
       #     if [ -f server.pid ]; then
       #       kill $(cat server.pid)
       #     fi
-      # - name: Upload Binaries as Artifacts
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: rust-binaries
-      #     path: |
-      #       target/release/web-server
-      #       target/release/sse-service
+      - name: Upload Binaries as Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-binaries
+          path: |
+            target/release/web-server
+            target/release/sse-service
 
   deploy:
     needs: build
