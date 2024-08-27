@@ -24,9 +24,33 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Core Config
+      SERVICE_PG_DEV_APP_URL: ${{ secrets.SERVICE_PG_DEV_APP_URL }}
+      SERVICE_PG_DEV_POSTGRES_URL: ${{ secrets.SERVICE_PG_DEV_POSTGRES_URL }}
+      SERVICE_SCYLLA_DB_URL: ${{ secrets.SERVICE_SCYLLA_DB_URL }}
+      SERVICE_SCYLLA_DB_USER: ${{ secrets.SERVICE_SCYLLA_DB_USER }}
+      SERVICE_SCYLLA_DB_PASSWORD: ${{ secrets.SERVICE_SCYLLA_DB_PASSWORD }}
+      SERVICE_REDIS_URL: ${{ secrets.SERVICE_REDIS_URL }}
+      
+      # Auth Config
+      SERVICE_PWD_KEY: ${{ secrets.SERVICE_PWD_KEY }}
+      SERVICE_TOKEN_KEY: ${{ secrets.SERVICE_TOKEN_KEY }}
+      SERVICE_TOKEN_DURATION_SEC: ${{ secrets.SERVICE_TOKEN_DURATION_SEC }}
+      
+      # Consumer and Producer Config
+      KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
+      
+      # Web Server Config
+      SERVICE_WEB_SERVER_URL: ${{ secrets.SERVICE_WEB_SERVER_URL }}
+      SERVICE_WEB_FOLDER: ${{ secrets.SERVICE_WEB_FOLDER }}
+      
+      # SSE Service Config
+      SERVICE_SSE_SERVER_URL: ${{ secrets.SERVICE_SSE_SERVER_URL }}
+    
     strategy:
       matrix:
-        rust: [1.80.0, stable]
+        rust: [1.80.1, stable]
     services:
       postgres:
         image: postgres:16.3
@@ -103,44 +127,34 @@ jobs:
             sleep 2
           done
 
-          # Scylla
-          # until cqlsh localhost 9042 -e "show version" >/dev/null 2>&1; do
-          #   echo "Waiting for Scylla..."
-          #   sleep 2
-          # done
+          # 다른 서비스들에 대한 대기 로직...
 
-          # Redis
-          # until redis-cli ping >/dev/null 2>&1; do
-          #   echo "Waiting for Redis..."
-          #   sleep 2
-          # done
+      - name: Test Database Connection
+        run: |
+          echo "Testing direct connection to PostgreSQL..."
+          if psql -c '\l'; then
+            echo "Successfully connected to PostgreSQL and listed databases"
+          else
+            echo "Failed to connect to PostgreSQL"
+            exit 1
+          fi
+
+          echo "Testing connection using SERVICE_PG_DEV_POSTGRES_URL..."
+          if psql "$SERVICE_PG_DEV_POSTGRES_URL" -c '\l'; then
+            echo "Successfully connected using SERVICE_PG_DEV_POSTGRES_URL"
+          else
+            echo "Failed to connect using SERVICE_PG_DEV_POSTGRES_URL"
+            exit 1
+          fi
+
+          echo "SERVICE_PG_DEV_POSTGRES_URL: $(echo $SERVICE_PG_DEV_POSTGRES_URL | sed 's/:[^:]*@/:***@/')"
+          echo "SERVICE_PG_DEV_APP_URL: $(echo $SERVICE_PG_DEV_APP_URL | sed 's/:[^:]*@/:***@/')"
+
       - name: Start Server
-        env:
-          # Core Config
-          SERVICE_PG_DEV_APP_URL: ${{ secrets.SERVICE_PG_DEV_APP_URL }}
-          SERVICE_PG_DEV_POSTGRES_URL: ${{ secrets.SERVICE_PG_DEV_POSTGRES_URL }}
-          SERVICE_SCYLLA_DB_URL: ${{ secrets.SERVICE_SCYLLA_DB_URL }}
-          SERVICE_SCYLLA_DB_USER: ${{ secrets.SERVICE_SCYLLA_DB_USER }}
-          SERVICE_SCYLLA_DB_PASSWORD: ${{ secrets.SERVICE_SCYLLA_DB_PASSWORD }}
-          SERVICE_REDIS_URL: ${{ secrets.SERVICE_REDIS_URL }}
-          
-          # Auth Config
-          SERVICE_PWD_KEY: ${{ secrets.SERVICE_PWD_KEY }}
-          SERVICE_TOKEN_KEY: ${{ secrets.SERVICE_TOKEN_KEY }}
-          SERVICE_TOKEN_DURATION_SEC: ${{ secrets.SERVICE_TOKEN_DURATION_SEC }}
-          
-          # Consumer and Producer Config
-          KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
-          
-          # Web Server Config
-          SERVICE_WEB_SERVER_URL: ${{ secrets.SERVICE_WEB_SERVER_URL }}
-          SERVICE_WEB_FOLDER: ${{ secrets.SERVICE_WEB_FOLDER }}
-          
-          # SSE Service Config
-          SERVICE_SSE_SERVER_URL: ${{ secrets.SERVICE_SSE_SERVER_URL }}
         run: |
           ./target/release/web-server &
           echo $! > server.pid
+
       - name: Wait for Server and Health Check
         run: |
           for i in {1..30}; do
@@ -232,3 +246,5 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  
