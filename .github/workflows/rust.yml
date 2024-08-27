@@ -55,9 +55,9 @@ jobs:
       postgres:
         image: postgres:16.3
         env:
-          POSTGRES_USER: dev
-          POSTGRES_PASSWORD: dev
-          POSTGRES_DB: dev
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -126,30 +126,6 @@ jobs:
             echo "Waiting for Kafka..."
             sleep 2
           done
-
-          # 다른 서비스들에 대한 대기 로직...
-
-      - name: Test Database Connection
-        run: |
-          echo "Testing direct connection to PostgreSQL..."
-          if psql -c '\l'; then
-            echo "Successfully connected to PostgreSQL and listed databases"
-          else
-            echo "Failed to connect to PostgreSQL"
-            exit 1
-          fi
-
-          echo "Testing connection using SERVICE_PG_DEV_POSTGRES_URL..."
-          if psql "$SERVICE_PG_DEV_POSTGRES_URL" -c '\l'; then
-            echo "Successfully connected using SERVICE_PG_DEV_POSTGRES_URL"
-          else
-            echo "Failed to connect using SERVICE_PG_DEV_POSTGRES_URL"
-            exit 1
-          fi
-
-          echo "SERVICE_PG_DEV_POSTGRES_URL: $(echo $SERVICE_PG_DEV_POSTGRES_URL | sed 's/:[^:]*@/:***@/')"
-          echo "SERVICE_PG_DEV_APP_URL: $(echo $SERVICE_PG_DEV_APP_URL | sed 's/:[^:]*@/:***@/')"
-
       - name: Start Server
         run: |
           ./target/release/web-server &
