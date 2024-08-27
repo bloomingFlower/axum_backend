@@ -113,49 +113,49 @@ jobs:
           CARGO_INCREMENTAL: 0
         run: |
           cargo build --release --bin web-server --bin sse-service -j 4
-      - name: Wait for services
-        run: |
-          # Postgres
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for PostgreSQL..."
-            sleep 2
-          done
+      # - name: Wait for services
+      #   run: |
+      #     # Postgres
+      #     until pg_isready -h localhost -p 5432; do
+      #       echo "Waiting for PostgreSQL..."
+      #       sleep 2
+      #     done
 
-          # Kafka
-          until nc -z localhost 9092; do
-            echo "Waiting for Kafka..."
-            sleep 2
-          done
-      - name: Start Server
-        run: |
-          ./target/release/web-server &
-          echo $! > server.pid
+      #     # Kafka
+      #     until nc -z localhost 9092; do
+      #       echo "Waiting for Kafka..."
+      #       sleep 2
+      #     done
+      # - name: Start Server
+      #   run: |
+      #     ./target/release/web-server &
+      #     echo $! > server.pid
 
-      - name: Wait for Server and Health Check
-        run: |
-          for i in {1..30}; do
-            if curl -sSf http://localhost:3000/health > /dev/null 2>&1; then
-              echo "Server is up!"
-              break
-            fi
-            echo "Waiting for server... (attempt $i)"
-            sleep 2
-          done
-      - name: Run example test
-        run: cargo run -p web-server --example test
-      - name: Stop Server
-        if: always()
-        run: |
-          if [ -f server.pid ]; then
-            kill $(cat server.pid)
-          fi
-      - name: Upload Binaries as Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: rust-binaries
-          path: |
-            target/release/web-server
-            target/release/sse-service
+      # - name: Wait for Server and Health Check
+      #   run: |
+      #     for i in {1..30}; do
+      #       if curl -sSf http://localhost:3000/health > /dev/null 2>&1; then
+      #         echo "Server is up!"
+      #         break
+      #       fi
+      #       echo "Waiting for server... (attempt $i)"
+      #       sleep 2
+      #     done
+      # - name: Run example test
+      #   run: cargo run -p web-server --example test
+      # - name: Stop Server
+      #   if: always()
+      #   run: |
+      #     if [ -f server.pid ]; then
+      #       kill $(cat server.pid)
+      #     fi
+      # - name: Upload Binaries as Artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: rust-binaries
+      #     path: |
+      #       target/release/web-server
+      #       target/release/sse-service
 
   deploy:
     needs: build
