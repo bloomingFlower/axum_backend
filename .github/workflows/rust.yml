@@ -24,40 +24,16 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # Core Config
-      SERVICE_PG_DEV_APP_URL: ${{ secrets.SERVICE_PG_DEV_APP_URL }}
-      SERVICE_PG_DEV_POSTGRES_URL: ${{ secrets.SERVICE_PG_DEV_POSTGRES_URL }}
-      SERVICE_SCYLLA_DB_URL: ${{ secrets.SERVICE_SCYLLA_DB_URL }}
-      SERVICE_SCYLLA_DB_USER: ${{ secrets.SERVICE_SCYLLA_DB_USER }}
-      SERVICE_SCYLLA_DB_PASSWORD: ${{ secrets.SERVICE_SCYLLA_DB_PASSWORD }}
-      SERVICE_REDIS_URL: ${{ secrets.SERVICE_REDIS_URL }}
-      
-      # Auth Config
-      SERVICE_PWD_KEY: ${{ secrets.SERVICE_PWD_KEY }}
-      SERVICE_TOKEN_KEY: ${{ secrets.SERVICE_TOKEN_KEY }}
-      SERVICE_TOKEN_DURATION_SEC: ${{ secrets.SERVICE_TOKEN_DURATION_SEC }}
-      
-      # Consumer and Producer Config
-      KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
-      
-      # Web Server Config
-      SERVICE_WEB_SERVER_URL: ${{ secrets.SERVICE_WEB_SERVER_URL }}
-      SERVICE_WEB_FOLDER: ${{ secrets.SERVICE_WEB_FOLDER }}
-      
-      # SSE Service Config
-      SERVICE_SSE_SERVER_URL: ${{ secrets.SERVICE_SSE_SERVER_URL }}
-    
     strategy:
       matrix:
-        rust: [1.80.1, stable]
+        rust: [1.80.0, stable]
     services:
       postgres:
         image: postgres:16.3
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: dev
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -95,67 +71,32 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Cache Cargo dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
       - name: Check Rust version
         run: rustc --version
-      - name: Build Release Binaries
-        env:
-          CARGO_NET_GIT_FETCH_WITH_CLI: true
-          CARGO_INCREMENTAL: 0
+      - name: Build
+        run: cargo build --verbose
+      - name: Wait for services
         run: |
-          cargo build --release --bin web-server --bin sse-service -j 4
-      # - name: Wait for services
-      #   run: |
-      #     # Postgres
-      #     until pg_isready -h localhost -p 5432; do
-      #       echo "Waiting for PostgreSQL..."
-      #       sleep 2
-      #     done
-
-      #     # Kafka
-      #     until nc -z localhost 9092; do
-      #       echo "Waiting for Kafka..."
-      #       sleep 2
-      #     done
-      # - name: Start Server
-      #   run: |
-      #     ./target/release/web-server &
-      #     echo $! > server.pid
-
-      # - name: Wait for Server and Health Check
-      #   run: |
-      #     for i in {1..30}; do
-      #       if curl -sSf http://localhost:3000/health > /dev/null 2>&1; then
-      #         echo "Server is up!"
-      #         break
-      #       fi
-      #       echo "Waiting for server... (attempt $i)"
-      #       sleep 2
-      #     done
-      # - name: Run example test
-      #   run: cargo run -p web-server --example test
-      # - name: Stop Server
-      #   if: always()
-      #   run: |
-      #     if [ -f server.pid ]; then
-      #       kill $(cat server.pid)
-      #     fi
-      - name: Upload Binaries as Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: rust-binaries
-          path: |
-            target/release/web-server
-            target/release/sse-service
+          sleep 30
+          nc -z localhost 9092 || (echo "Kafka is not running" && exit 1)
+          nc -z localhost 9042 || (echo "Scylla is not running" && exit 1)
+          nc -z localhost 6379 || (echo "Redis is not running" && exit 1)
+      - name: Start Server
+        run: cargo run -p web-server &
+      - name: Wait for Server and Health Check
+        run: |
+          sleep 10
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Server is up!"
+              break
+            fi
+            echo "Waiting for server... (attempt $i)"
+            sleep 2
+          done
+      - name: Run tests
+        run: cargo run -p web-server --example test
+        #cargo test --verbose
 
   deploy:
     needs: build
@@ -164,12 +105,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download Binaries
-        uses: actions/download-artifact@v3
-        with:
-          name: rust-binaries
-          path: binaries
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -199,9 +134,6 @@ jobs:
           target: web-server
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          file: Dockerfile
-          build-args: |
-            BINARY_PATH=binaries/web-server
 
       - name: Build and push SSE Docker image
         uses: docker/build-push-action@v5
@@ -211,16 +143,11 @@ jobs:
           push: true
           tags: |
             bloomingflower/axum-backend-sse:latest
-          target: sse-service
+          target: sse-server
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          file: Dockerfile
-          build-args: |
-            BINARY_PATH=binaries/sse-service
 
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-  
