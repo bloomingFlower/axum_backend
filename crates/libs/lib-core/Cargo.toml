@@ -49,7 +49,7 @@ futures = "0.3.6"
 chrono = "0.4.0"
 base64 = "0.22.0"
 
-redis = { version = "0.26.1", features = ["tokio-comp"] }
+redis = { version = "0.27.2", features = ["tokio-comp"] }
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error
