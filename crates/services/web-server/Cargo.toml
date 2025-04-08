@@ -15,7 +15,7 @@ lib-core = { path = "../../libs/lib-core" }
 lib-producer = { path = "../../libs/lib-producer" }
 lib-consumer = { path = "../../libs/lib-consumer" }
 # Tokio is an asynchronous runtime for Rust
-tokio = { version = "1.38.0", features = ["full"] }
+tokio = { version = "1.38.2", features = ["full"] }
 # async-trait is a library for defining async functions that return a Future
 async-trait = "0.1.80"
 # Serde is a serialization/deserialization library for Rust
