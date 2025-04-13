@@ -28,7 +28,7 @@ uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 lazy-regex = "3.1.0"
 derive_more = { version = "1.0.0-beta", features = ["from"] }
 enum_dispatch = "0.3.13"
-tokio = { version = "1.38.0", features = ["full"] }
+tokio = { version = "1.38.2", features = ["full"] }
 
 [dev-dependencies]
 # Anyhow is a Rust library for Error type that can represent any error
