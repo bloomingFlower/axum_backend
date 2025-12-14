@@ -55,7 +55,7 @@ impl RedisManager {
                 e.to_string(),
             ))
         })?;
-        conn.set_ex(key, serialized, expiry.try_into().unwrap())
+        conn.set_ex::<_, _, ()>(key, serialized, expiry.try_into().unwrap())
             .await?;
         debug!("--> RedisCache: Successfully set key: {}", key);
         Ok(())
