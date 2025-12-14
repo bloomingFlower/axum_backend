@@ -1,5 +1,5 @@
 # Builder stage
-FROM rust:latest AS builder
+FROM rust:1.79-bullseye AS builder
 
 # Create APT cache directory and set permissions
 RUN mkdir -p /var/cache/apt/archives/partial && \
@@ -23,7 +23,7 @@ COPY . .
 RUN cargo build --release --bin web-server --bin sse-service
 
 # Web-server image
-FROM debian:bookworm-slim AS web-server
+FROM debian:bullseye-slim AS web-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -40,7 +40,7 @@ CMD ["web-server"]
 EXPOSE 3000
 
 # SSE-server image
-FROM debian:bookworm-slim AS sse-server
+FROM debian:bullseye-slim AS sse-server
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
