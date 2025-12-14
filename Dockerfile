@@ -1,5 +1,5 @@
 # Builder stage
-FROM rust:1.79-bullseye AS builder
+FROM rust:1.80-bullseye AS builder
 
 # Create APT cache directory and set permissions
 RUN mkdir -p /var/cache/apt/archives/partial && \
