@@ -41,8 +41,10 @@ async fn main() -> Result<()> {
         .with_env_filter(EnvFilter::from_default_env()) // set log level(config.toml)
         .init();
 
-    // For DEV ONLY
-    _dev_utils::init_dev().await;
+    // For DEV ONLY - only run in non-production environments
+    if std::env::var("APP_ENVIRONMENT").as_deref() != Ok("production") {
+        _dev_utils::init_dev().await;
+    }
 
     // Spawn a new task for producing messages to Kafka
     lib_producer::produce()
